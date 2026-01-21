@@ -1,6 +1,4 @@
 import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { AuthService } from '../services/auth.service';
 
 /**
  * Authentication interceptor that attaches JWT Bearer tokens to outgoing requests.
@@ -11,8 +9,6 @@ import { AuthService } from '../services/auth.service';
  * - Uses functional interceptor pattern (Angular 17+)
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-
   // Skip token injection for auth endpoints
   const isAuthEndpoint =
     req.url.includes('/api/v1/auth/login') || req.url.includes('/api/v1/auth/refresh');
@@ -24,7 +20,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
-  const token = authService.getAccessToken();
+  // Read token directly to avoid instantiating AuthService (which may try silent refresh)
+  const token = sessionStorage.getItem('access_token');
 
   if (token) {
     // Clone the request and add the authorization header

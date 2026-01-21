@@ -4,3 +4,4 @@
  */
 export { errorInterceptor } from './error.interceptor';
 export { authInterceptor } from './auth.interceptor';
+export { clientIdInterceptor } from './client-id.interceptor';

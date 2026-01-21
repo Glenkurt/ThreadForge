@@ -12,12 +12,12 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'home'
+    redirectTo: 'generator'
   },
   {
-    path: 'home',
-    // Home is the main app component content - no separate component needed
-    children: []
+    path: 'generator',
+    loadComponent: () =>
+      import('./features/generator/generator.component').then(m => m.GeneratorComponent)
   },
   {
     path: 'dashboard',
@@ -45,6 +45,6 @@ export const routes: Routes = [
   // },
   {
     path: '**',
-    redirectTo: 'home'
+    redirectTo: 'generator'
   }
 ];

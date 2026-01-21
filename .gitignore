@@ -1,0 +1,48 @@
+# macOS
+.DS_Store
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+
+# -----------------
+# .NET / Visual Studio
+# -----------------
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+
+# Rider
+.idea/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# -----------------
+# Node / Angular
+# -----------------
+**/node_modules/
+**/dist/
+**/.angular/
+**/.cache/
+
+# Coverage
+**/coverage/
+
+# -----------------
+# Docker
+# -----------------
+*.pid
+
+# -----------------
+# Test host build helpers
+# -----------------
+**/BuildHost-net472/
+**/BuildHost-netcore/

@@ -1,9 +1,11 @@
 using System.Text;
 using Api.Services;
 using Api.Models.Entities;
+using Api.Models.Options;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Configuration;
 
 namespace Api.Extensions;
 
@@ -21,6 +23,16 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPasswordHasher<ApplicationUser>, PasswordHasher<ApplicationUser>>();
         services.AddScoped<IHealthService, HealthService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IThreadGenerationService, ThreadGenerationService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddXai(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<XaiOptions>(configuration.GetSection(XaiOptions.SectionName));
+
+        services.AddHttpClient<IXaiChatClient, XaiChatClient>();
 
         return services;
     }
@@ -104,6 +116,25 @@ public static class ServiceCollectionExtensions
                         Window = TimeSpan.FromMinutes(1),
                         QueueLimit = 0
                     }));
+
+            // MVP: 20 thread generations per anonymous user per day
+            options.AddPolicy("threadgen", context =>
+            {
+                var clientId = context.Request.Headers["X-Client-Id"].ToString();
+                if (string.IsNullOrWhiteSpace(clientId) || clientId.Length > 128)
+                {
+                    clientId = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                }
+
+                return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: clientId,
+                    factory: _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 20,
+                        Window = TimeSpan.FromDays(1),
+                        QueueLimit = 0
+                    });
+            });
         });
 
         return services;

@@ -1,0 +1,177 @@
+<!-- Dot Grid Background -->
+<div class="app-bg"></div>
+
+<!-- Main Generator Layout -->
+<main class="generator-page">
+  <div class="generator-layout">
+    
+    <!-- FORGE PANEL (Left Column) -->
+    <aside class="forge-column">
+      <div class="panel forge-panel">
+        <!-- Panel Header -->
+        <header class="panel-header">
+          <div class="panel-title-row">
+            <svg class="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+            <h2 class="panel-title">The Forge</h2>
+          </div>
+          <p class="panel-subtitle">Craft your next viral thread</p>
+        </header>
+
+        <!-- Form Content -->
+        <div class="forge-form">
+          
+          <!-- Topic Input -->
+          <div class="form-group">
+            <label class="form-label" for="topic">
+              Topic
+              <span class="required-indicator">*</span>
+            </label>
+            <input
+              type="text"
+              id="topic"
+              class="input"
+              [class.error]="topicError()"
+              placeholder="What do you want to write about?"
+              [ngModel]="topic()"
+              (ngModelChange)="topic.set($event)"
+              (blur)="onTopicBlur()"
+              maxlength="140"
+            />
+            @if (topicError()) {
+              <span class="form-error">{{ topicError() }}</span>
+            }
+            <span class="form-hint">{{ topic().trim().length }}/120 characters</span>
+          </div>
+
+          <!-- Audience Input -->
+          <div class="form-group">
+            <label class="form-label" for="audience">
+              Audience (optional)
+            </label>
+            <input
+              type="text"
+              id="audience"
+              class="input"
+              [class.error]="audienceError()"
+              placeholder="Indie hackers, founders, developers..."
+              [ngModel]="audience()"
+              (ngModelChange)="audience.set($event)"
+              (blur)="onAudienceBlur()"
+              maxlength="100"
+            />
+            @if (audienceError()) {
+              <span class="form-error">{{ audienceError() }}</span>
+            }
+          </div>
+
+          <!-- Tone Selector -->
+          <div class="form-group">
+            <span class="form-label" id="tone-label">Tone</span>
+            <div class="tone-selector" role="group" aria-labelledby="tone-label">
+              @for (tone of toneOptions; track tone.value) {
+                <button
+                  type="button"
+                  class="tone-pill"
+                  [class.active]="selectedTone() === tone.value"
+                  (click)="selectTone(tone.value)"
+                >
+                  {{ tone.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Tweet Count Slider -->
+          <div class="form-group">
+            <label class="form-label" for="tweet-count">
+              Thread Length
+              <span class="tweet-count-badge">{{ tweetCount() }} tweets</span>
+            </label>
+            <div class="slider-container">
+              <span class="slider-label">Short</span>
+              <input
+                type="range"
+                id="tweet-count"
+                min="5"
+                max="12"
+                step="1"
+                [ngModel]="tweetCount()"
+                (ngModelChange)="tweetCount.set($event)"
+              />
+              <span class="slider-label">Long</span>
+            </div>
+            <div class="slider-ticks">
+              @for (n of [5, 6, 7, 8, 9, 10, 11, 12]; track n) {
+                <span 
+                  class="tick" 
+                  [class.active]="tweetCount() === n"
+                >
+                  {{ n }}
+                </span>
+              }
+            </div>
+          </div>
+
+          <!-- Generate Button -->
+          <button
+            type="button"
+            class="button-primary generate-button"
+            [disabled]="!isFormValid()"
+            (click)="onGenerate()"
+          >
+            <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            Generate
+          </button>
+        </div>
+      </div>
+
+      <!-- Powered By Badge -->
+      <div class="powered-by">
+        <span class="powered-by-text">Powered by</span>
+        <span class="powered-by-brand">xAI Grok</span>
+      </div>
+    </aside>
+
+    <!-- PREVIEW PANEL (Right Column) -->
+    <section class="preview-column">
+      <div class="panel preview-panel">
+        <!-- Panel Header -->
+        <header class="panel-header">
+          <div class="panel-title-row">
+            <svg class="panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+              <line x1="9" y1="21" x2="9" y2="9"/>
+            </svg>
+            <h2 class="panel-title">Preview</h2>
+          </div>
+        </header>
+
+        <!-- Empty State -->
+        <div class="preview-empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              <line x1="9" y1="9" x2="15" y2="9"/>
+              <line x1="9" y1="13" x2="13" y2="13"/>
+            </svg>
+          </div>
+          <h3 class="empty-state-title">Your generated thread will appear here.</h3>
+          <p class="empty-state-subtitle">Fill in a topic, then click Generate.</p>
+          
+          <!-- Visual hint cards (decorative) -->
+          <div class="empty-state-preview">
+            <div class="preview-card-hint"></div>
+            <div class="preview-card-hint"></div>
+            <div class="preview-card-hint"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>

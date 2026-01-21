@@ -17,4 +17,4 @@ export { AuthService, type AuthResponse, type User } from './services/auth.servi
 export { authGuard, roleGuard } from './guards/auth.guard';
 
 // Interceptors
-export { errorInterceptor, authInterceptor } from './interceptors';
+export { errorInterceptor, authInterceptor, clientIdInterceptor } from './interceptors';

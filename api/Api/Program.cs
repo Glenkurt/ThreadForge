@@ -7,7 +7,7 @@ using Serilog;
 // Configure Serilog early to capture startup logs
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .CreateBootstrapLogger();
+    .CreateLogger();
 
 try
 {
@@ -17,11 +17,12 @@ try
 
     // Configure Serilog from appsettings
     builder.Host.UseSerilog((context, services, configuration) => configuration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .Enrich.WithProperty("Application", "TemplateFullStack")
-        .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName));
+            .ReadFrom.Configuration(context.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext()
+            .Enrich.WithProperty("Application", "ThreadForge")
+            .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName),
+        preserveStaticLogger: true);
 
     // Add services to the container
     builder.Services.AddControllers()
@@ -34,11 +35,22 @@ try
     builder.Services.AddSwaggerGen();
 
     // Database
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    if (builder.Environment.IsEnvironment("Testing"))
+    {
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseInMemoryDatabase("TestDatabase"));
+    }
+    else
+    {
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    }
 
     // Application services (business logic layer)
     builder.Services.AddApplicationServices();
+
+    // Grok (xAI)
+    builder.Services.AddXai(builder.Configuration);
 
     // JWT Authentication
     builder.Services.AddJwtAuthentication(builder.Configuration);

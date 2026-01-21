@@ -31,6 +31,8 @@ services:
       - Jwt__Secret=${JWT_SECRET:?JWT_SECRET is required}
       - Jwt__Issuer=${JWT_ISSUER:-https://localhost}
       - Jwt__Audience=${JWT_AUDIENCE:-https://localhost}
+      - Xai__ApiKey=${XAI_API_KEY:?XAI_API_KEY is required}
+      - Xai__Model=${XAI_MODEL:-grok-2-latest}
     depends_on:
       db:
         condition: service_healthy

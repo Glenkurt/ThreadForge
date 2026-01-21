@@ -4,6 +4,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
 import { errorInterceptor, authInterceptor } from './core';
+import { clientIdInterceptor } from './core';
 
 /**
  * Application configuration using functional providers (Angular 17+).
@@ -18,6 +19,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(
       withInterceptors([
+        clientIdInterceptor, // Add anonymous client id for MVP rate limiting
         authInterceptor, // Add auth token to requests
         errorInterceptor // Handle HTTP errors globally
       ])

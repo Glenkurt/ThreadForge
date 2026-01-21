@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
 
     public DbSet<ApplicationUser> Users => Set<ApplicationUser>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<ThreadDraft> ThreadDrafts => Set<ThreadDraft>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,6 +37,19 @@ public class AppDbContext : DbContext
                 .WithMany(u => u.RefreshTokens)
                 .HasForeignKey(t => t.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ThreadDraft>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+            entity.HasIndex(t => t.ClientId);
+
+            entity.Property(t => t.ClientId).IsRequired().HasMaxLength(128);
+            entity.Property(t => t.PromptJson).IsRequired().HasColumnType("jsonb");
+            entity.Property(t => t.OutputJson).IsRequired().HasColumnType("jsonb");
+            entity.Property(t => t.Provider).IsRequired().HasMaxLength(64);
+            entity.Property(t => t.Model).IsRequired().HasMaxLength(128);
+            entity.Property(t => t.CreatedAt).IsRequired();
         });
     }
 }
