@@ -1,0 +1,36 @@
+.tweet-card {
+  background: #ffffff;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tweet-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.tweet-number {
+  font-weight: 600;
+  color: #1da1f2;
+}
+
+.char-count {
+  color: #657786;
+}
+
+.char-count.over-limit {
+  color: #e0245e;
+  font-weight: 600;
+}
+
+.tweet-body {
+  color: #14171a;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

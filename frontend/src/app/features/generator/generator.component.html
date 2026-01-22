@@ -118,13 +118,14 @@
           <button
             type="button"
             class="button-primary generate-button"
-            [disabled]="!isFormValid()"
+            [disabled]="!isFormValid() || isGenerating()"
             (click)="onGenerate()"
           >
-            <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg *ngIf="!isGenerating()" class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
-            Generate
+            <div *ngIf="isGenerating()" class="button-spinner"></div>
+            {{ isGenerating() ? 'Generating...' : 'Generate' }}
           </button>
         </div>
       </div>
@@ -151,25 +152,11 @@
           </div>
         </header>
 
-        <!-- Empty State -->
-        <div class="preview-empty-state">
-          <div class="empty-state-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              <line x1="9" y1="9" x2="15" y2="9"/>
-              <line x1="9" y1="13" x2="13" y2="13"/>
-            </svg>
-          </div>
-          <h3 class="empty-state-title">Your generated thread will appear here.</h3>
-          <p class="empty-state-subtitle">Fill in a topic, then click Generate.</p>
-          
-          <!-- Visual hint cards (decorative) -->
-          <div class="empty-state-preview">
-            <div class="preview-card-hint"></div>
-            <div class="preview-card-hint"></div>
-            <div class="preview-card-hint"></div>
-          </div>
-        </div>
+        <!-- Thread Preview Component -->
+        <app-thread-preview 
+          [tweets]="generatedThread()" 
+          [isGenerating]="isGenerating()">
+        </app-thread-preview>
       </div>
     </section>
 

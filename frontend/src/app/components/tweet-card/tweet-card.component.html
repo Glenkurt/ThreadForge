@@ -1,0 +1,11 @@
+<div class="tweet-card">
+  <div class="tweet-header">
+    <span class="tweet-number">{{ index }}</span>
+    <span class="char-count" [class.over-limit]="isOverLimit">
+      {{ charCount }}/280
+    </span>
+  </div>
+  <div class="tweet-body">
+    {{ tweet }}
+  </div>
+</div>
