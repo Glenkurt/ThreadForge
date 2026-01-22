@@ -75,16 +75,16 @@ export class AuthService {
     return this.http
       .post<AuthResponse>(`${this.apiUrl}/login`, { email, password }, { withCredentials: true })
       .pipe(
-      tap(response => {
-        this.storeTokens(response);
-        this.loadCurrentUser().subscribe();
-        this.isLoadingSignal.set(false);
-      }),
-      catchError(error => {
-        this.isLoadingSignal.set(false);
-        throw error;
-      })
-    );
+        tap(response => {
+          this.storeTokens(response);
+          this.loadCurrentUser().subscribe();
+          this.isLoadingSignal.set(false);
+        }),
+        catchError(error => {
+          this.isLoadingSignal.set(false);
+          throw error;
+        })
+      );
   }
 
   /**
@@ -92,16 +92,20 @@ export class AuthService {
    */
   refreshToken(): Observable<AuthResponse | null> {
     return this.http
-      .post<AuthResponse>(`${this.apiUrl}/refresh`, { refreshToken: null }, { withCredentials: true })
+      .post<AuthResponse>(
+        `${this.apiUrl}/refresh`,
+        { refreshToken: null },
+        { withCredentials: true }
+      )
       .pipe(
-      tap(response => {
-        this.storeTokens(response);
-      }),
-      catchError(() => {
-        this.logout();
-        return of(null);
-      })
-    );
+        tap(response => {
+          this.storeTokens(response);
+        }),
+        catchError(() => {
+          this.logout();
+          return of(null);
+        })
+      );
   }
 
   /**

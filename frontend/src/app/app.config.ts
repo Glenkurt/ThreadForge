@@ -1,6 +1,7 @@
 import { ApplicationConfig } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 import { routes } from './app.routes';
 import { errorInterceptor, authInterceptor } from './core';
@@ -23,6 +24,7 @@ export const appConfig: ApplicationConfig = {
         authInterceptor, // Add auth token to requests
         errorInterceptor // Handle HTTP errors globally
       ])
-    )
+    ),
+    provideAnimations()
   ]
 };

@@ -1,0 +1,29 @@
+<div class="preview-panel">
+  <!-- Empty State -->
+  <div *ngIf="!isGenerating && !tweets" class="empty-state">
+    <div class="empty-state-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        <line x1="9" y1="9" x2="15" y2="9"/>
+        <line x1="9" y1="13" x2="13" y2="13"/>
+      </svg>
+    </div>
+    <h3 class="empty-state-title">Your thread will appear here</h3>
+    <p class="empty-state-subtitle">Fill out the form and click Generate Thread to get started</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isGenerating" class="loading-state">
+    <div class="spinner"></div>
+    <p>Generating your thread...</p>
+  </div>
+
+  <!-- Tweet Cards -->
+  <div *ngIf="!isGenerating && tweets" class="tweet-list">
+    <app-tweet-card
+      *ngFor="let tweet of tweets; let i = index"
+      [tweet]="tweet"
+      [index]="i + 1">
+    </app-tweet-card>
+  </div>
+</div>

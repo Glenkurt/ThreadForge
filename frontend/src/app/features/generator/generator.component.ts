@@ -1,36 +1,45 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { HttpErrorResponse } from '@angular/common/http';
+import { TimeoutError } from 'rxjs';
+
+import { ThreadService } from '../../services/thread.service';
+import { GenerateThreadRequest } from '../../models/thread.model';
+import { ThreadPreviewComponent } from '../../components/thread-preview/thread-preview.component';
+
+type ToneValue = 'indie_hacker' | 'educational' | 'provocative' | 'direct' | null;
 
 type ToneOption = {
   label: string;
-  value: string | null;
+  value: ToneValue;
 };
-
-interface GeneratorFormState {
-  topic: string;
-  audience: string | null;
-  tone: string | null;
-  tweetCount: number;
-}
 
 @Component({
   selector: 'app-generator',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ThreadPreviewComponent],
   templateUrl: './generator.component.html',
   styleUrl: './generator.component.css'
 })
 export class GeneratorComponent {
+  private readonly threadService = inject(ThreadService);
+  private readonly snackBar = inject(MatSnackBar);
+
   // Form signals
   readonly topic = signal('');
   readonly audience = signal('');
-  readonly selectedTone = signal<string | null>(null);
+  readonly selectedTone = signal<ToneValue>(null);
   readonly tweetCount = signal(7);
 
   // Validation signals
   readonly topicTouched = signal(false);
   readonly audienceTouched = signal(false);
+
+  // Generation state
+  readonly isGenerating = signal(false);
+  readonly generatedThread = signal<string[] | null>(null);
 
   // Tone options
   readonly toneOptions: ToneOption[] = [
@@ -62,15 +71,15 @@ export class GeneratorComponent {
   readonly isFormValid = computed(() => {
     const topicValue = this.topic().trim();
     const audienceValue = this.audience().trim();
-    
+
     const topicValid = topicValue.length >= 1 && topicValue.length <= 120;
     const audienceValid = audienceValue.length === 0 || audienceValue.length <= 80;
-    
+
     return topicValid && audienceValid;
   });
 
   // Methods
-  selectTone(value: string | null): void {
+  selectTone(value: ToneValue): void {
     this.selectedTone.set(value);
   }
 
@@ -91,15 +100,65 @@ export class GeneratorComponent {
       return;
     }
 
-    const formState: GeneratorFormState = {
+    this.isGenerating.set(true);
+    const startTime = Date.now();
+
+    const request: GenerateThreadRequest = {
       topic: this.topic().trim(),
       audience: this.audience().trim() || null,
       tone: this.selectedTone(),
       tweetCount: this.tweetCount()
     };
 
-    // Task 1: No API call - just emit form state for validation
-    // eslint-disable-next-line no-console
-    console.log('Generate Thread:', formState);
+    this.threadService.generateThread(request).subscribe({
+      next: response => {
+        const duration = Date.now() - startTime;
+        // eslint-disable-next-line no-console
+        console.log(`Thread generation took ${duration}ms`);
+        this.generatedThread.set(response.tweets);
+        this.isGenerating.set(false);
+      },
+      error: error => {
+        const duration = Date.now() - startTime;
+        // eslint-disable-next-line no-console
+        console.log(`Thread generation failed after ${duration}ms`);
+        this.isGenerating.set(false);
+        this.handleError(error);
+      }
+    });
+  }
+
+  private handleError(error: HttpErrorResponse | Error): void {
+    let message: string;
+
+    // Check if it's a timeout error
+    if (error instanceof TimeoutError) {
+      message = 'Request took too long. Please try again.';
+    } else if (error instanceof HttpErrorResponse) {
+      if (error.status === 429) {
+        message = 'Daily limit reached. You can generate 20 threads per day. Try again tomorrow.';
+      } else if (error.status === 500 || error.status === 503) {
+        message = 'Thread generation failed. Please try again.';
+      } else if (error.status === 400) {
+        message = 'Invalid request. Please check your inputs.';
+      } else if (error.status === 0) {
+        message = 'Network error. Check your connection and try again.';
+      } else {
+        message = 'An unexpected error occurred. Please try again.';
+      }
+    } else {
+      message = 'An unexpected error occurred. Please try again.';
+    }
+
+    this.showErrorToast(message);
+  }
+
+  private showErrorToast(message: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 5000,
+      horizontalPosition: 'center',
+      verticalPosition: 'top',
+      panelClass: ['error-toast']
+    });
   }
 }

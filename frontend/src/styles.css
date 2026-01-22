@@ -267,3 +267,20 @@ input[type="range"]::-moz-range-thumb {
 
 .font-medium { font-weight: 500; }
 .font-semibold { font-weight: 600; }
+
+/* ==========================================================================
+   6. ERROR TOAST (Angular Material Snackbar)
+   ========================================================================== */
+
+.error-toast {
+  background-color: #e0245e !important;
+  color: #ffffff !important;
+}
+
+.error-toast .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+}
+
+.error-toast .mat-mdc-button {
+  color: #ffffff !important;
+}
