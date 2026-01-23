@@ -98,7 +98,22 @@ POSTGRES_USER=postgres
 POSTGRES_PASSWORD=your_secure_password
 POSTGRES_DB=templatedb
 JWT_SECRET=your_jwt_secret_minimum_32_chars
+XAI_API_KEY=your_xai_api_key
+XAI_MODEL=grok-3-mini
 ```
+
+### xAI Grok Models
+
+The following Grok models are available for thread generation:
+
+| Model | Description | Use Case |
+| ----- | ----------- | -------- |
+| `grok-3-mini` | Faster, cheaper version | **Recommended** for production (lower cost) |
+| `grok-3` | Full-featured chat model | Best quality, higher token usage |
+| `grok-4` or `grok-4-0709` | Latest reasoning model | Advanced reasoning, highest cost |
+| `grok-2-vision-1212` | Image understanding | For image analysis tasks |
+
+Set your preferred model in the `.env` file with the `XAI_MODEL` variable.
 
 ### API (appsettings.json)
 

@@ -30,6 +30,12 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddXai(this IServiceCollection services, IConfiguration configuration)
     {
+        var apiKey = configuration["Xai:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            throw new InvalidOperationException("Xai:ApiKey must be configured in appsettings, environment variables, or user secrets");
+        }
+
         services.Configure<XaiOptions>(configuration.GetSection(XaiOptions.SectionName));
 
         services.AddHttpClient<IXaiChatClient, XaiChatClient>();

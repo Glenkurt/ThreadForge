@@ -1,36 +1,166 @@
+/* ==========================================================================
+   TWEET CARD - Dark Theme Styling
+   ========================================================================== */
+
 .tweet-card {
-  background: #ffffff;
-  border: 1px solid #e1e8ed;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+  background: var(--bg-panel-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  transition: border-color 0.15s ease;
+}
+
+.tweet-card:hover {
+  border-color: var(--border-strong);
+}
+
+/* Thread Connector Line */
+.tweet-card:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 28px;
+  bottom: -17px;
+  width: 2px;
+  height: 16px;
+  background: var(--border-subtle);
 }
 
 .tweet-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 12px;
-  font-size: 14px;
+  align-items: center;
+  margin-bottom: var(--space-3);
 }
 
 .tweet-number {
+  font-size: var(--text-sm);
   font-weight: 600;
-  color: #1da1f2;
+  color: var(--accent);
 }
 
 .char-count {
-  color: #657786;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
 }
 
 .char-count.over-limit {
-  color: #e0245e;
+  color: var(--danger);
   font-weight: 600;
 }
 
 .tweet-body {
-  color: #14171a;
+  color: var(--text-primary);
+  font-size: var(--text-base);
   line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+/* ==========================================================================
+   ACTION BUTTONS (Copy, Edit)
+   ========================================================================== */
+
+.tweet-actions {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: flex;
+  gap: var(--space-2);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tweet-card:hover .tweet-actions {
+  opacity: 1;
+}
+
+.action-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.action-button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.action-button.success {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+}
+
+.action-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ==========================================================================
+   EDIT MODE
+   ========================================================================== */
+
+.tweet-edit-textarea {
+  width: 100%;
+  min-height: 100px;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.tweet-edit-textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.edit-button {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.edit-button.save {
+  background: var(--accent);
+  border: none;
+  color: white;
+}
+
+.edit-button.save:hover {
+  background: var(--accent-hover);
+}
+
+.edit-button.cancel {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.edit-button.cancel:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
 }

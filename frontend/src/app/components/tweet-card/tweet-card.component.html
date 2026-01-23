@@ -1,11 +1,79 @@
 <div class="tweet-card">
+  <!-- Action Buttons (visible on hover) -->
+  <div class="tweet-actions" *ngIf="!isEditing">
+    <!-- Copy Button -->
+    <button
+      type="button"
+      class="action-button"
+      [class.success]="copied"
+      (click)="copyTweet()"
+      [attr.aria-label]="copied ? 'Copied' : 'Copy tweet'"
+    >
+      <!-- Checkmark Icon (shown after copy) -->
+      <svg
+        *ngIf="copied"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+      <!-- Copy Icon -->
+      <svg
+        *ngIf="!copied"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      </svg>
+    </button>
+
+    <!-- Edit Button -->
+    <button type="button" class="action-button" (click)="startEditing()" aria-label="Edit tweet">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+      </svg>
+    </button>
+  </div>
+
   <div class="tweet-header">
     <span class="tweet-number">{{ index }}</span>
-    <span class="char-count" [class.over-limit]="isOverLimit">
-      {{ charCount }}/280
-    </span>
+    <span class="char-count" [class.over-limit]="isOverLimit"> {{ charCount }}/280 </span>
   </div>
-  <div class="tweet-body">
+
+  <!-- View Mode -->
+  <div class="tweet-body" *ngIf="!isEditing">
     {{ tweet }}
+  </div>
+
+  <!-- Edit Mode -->
+  <div *ngIf="isEditing">
+    <textarea
+      class="tweet-edit-textarea"
+      [(ngModel)]="editedText"
+      (keydown)="onKeydown($event)"
+      (blur)="saveEdit()"
+      autofocus
+    ></textarea>
+    <div class="edit-actions">
+      <button type="button" class="edit-button cancel" (mousedown)="cancelEdit()">Cancel</button>
+      <button type="button" class="edit-button save" (mousedown)="saveEdit()">Save</button>
+    </div>
   </div>
 </div>

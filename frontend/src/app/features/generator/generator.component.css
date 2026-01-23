@@ -224,6 +224,11 @@
   height: 20px;
 }
 
+.button-icon-sm {
+  width: 16px;
+  height: 16px;
+}
+
 .button-spinner {
   width: 16px;
   height: 16px;
@@ -237,6 +242,90 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ==========================================================================
+   REGENERATE BUTTON
+   ========================================================================== */
+
+.regenerate-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: var(--space-3);
+}
+
+.regenerate-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.regenerate-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   FEEDBACK SECTION
+   ========================================================================== */
+
+.feedback-section {
+  margin-top: var(--space-3);
+}
+
+.feedback-toggle {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.feedback-toggle:hover {
+  color: var(--accent);
+}
+
+.feedback-input {
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-panel-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-family: inherit;
+}
+
+.feedback-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.feedback-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.feedback-input.error {
+  border-color: var(--danger);
+}
+
+.feedback-hint {
+  margin-top: var(--space-1);
 }
 
 /* ==========================================================================

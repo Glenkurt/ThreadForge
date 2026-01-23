@@ -1,15 +1,59 @@
-<div class="preview-panel">
+<div class="preview-container">
+  <!-- Copy All Button (visible when tweets exist) -->
+  <div class="preview-header" *ngIf="tweets && !isGenerating">
+    <button
+      type="button"
+      class="copy-all-button"
+      [class.success]="allCopied"
+      (click)="copyAllTweets()"
+    >
+      <!-- Checkmark Icon -->
+      <svg
+        *ngIf="allCopied"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+      <!-- Copy Icon -->
+      <svg
+        *ngIf="!allCopied"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      </svg>
+      {{ allCopied ? 'Copied!' : 'Copy All' }}
+    </button>
+  </div>
+
   <!-- Empty State -->
   <div *ngIf="!isGenerating && !tweets" class="empty-state">
     <div class="empty-state-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        <line x1="9" y1="9" x2="15" y2="9"/>
-        <line x1="9" y1="13" x2="13" y2="13"/>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        <line x1="9" y1="9" x2="15" y2="9" />
+        <line x1="9" y1="13" x2="13" y2="13" />
       </svg>
     </div>
     <h3 class="empty-state-title">Your thread will appear here</h3>
-    <p class="empty-state-subtitle">Fill out the form and click Generate Thread to get started</p>
+    <p class="empty-state-subtitle">Fill out the form and click Generate to get started</p>
   </div>
 
   <!-- Loading State -->
@@ -23,7 +67,9 @@
     <app-tweet-card
       *ngFor="let tweet of tweets; let i = index"
       [tweet]="tweet"
-      [index]="i + 1">
+      [index]="i + 1"
+      (tweetEdited)="onTweetEdited($event)"
+    >
     </app-tweet-card>
   </div>
 </div>

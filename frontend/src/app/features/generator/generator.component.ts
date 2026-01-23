@@ -41,6 +41,10 @@ export class GeneratorComponent {
   readonly isGenerating = signal(false);
   readonly generatedThread = signal<string[] | null>(null);
 
+  // Feedback state for regeneration
+  readonly showFeedback = signal(false);
+  readonly feedback = signal('');
+
   // Tone options
   readonly toneOptions: ToneOption[] = [
     { label: 'Default', value: null },
@@ -68,6 +72,14 @@ export class GeneratorComponent {
     return null;
   });
 
+  readonly feedbackError = computed(() => {
+    const value = this.feedback().trim();
+    if (value.length > 200) {
+      return 'Feedback must be 200 characters or less.';
+    }
+    return null;
+  });
+
   readonly isFormValid = computed(() => {
     const topicValue = this.topic().trim();
     const audienceValue = this.audience().trim();
@@ -76,6 +88,10 @@ export class GeneratorComponent {
     const audienceValid = audienceValue.length === 0 || audienceValue.length <= 80;
 
     return topicValid && audienceValid;
+  });
+
+  readonly isFeedbackValid = computed(() => {
+    return this.feedback().trim().length <= 200;
   });
 
   // Methods
@@ -91,7 +107,36 @@ export class GeneratorComponent {
     this.audienceTouched.set(true);
   }
 
+  toggleFeedback(): void {
+    this.showFeedback.set(!this.showFeedback());
+  }
+
+  onTweetEdited(event: { index: number; newText: string }): void {
+    const currentThread = this.generatedThread();
+    if (!currentThread) return;
+
+    const updatedThread = [...currentThread];
+    updatedThread[event.index - 1] = event.newText;
+    this.generatedThread.set(updatedThread);
+  }
+
+  onFeedbackKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.onRegenerate();
+    }
+  }
+
   onGenerate(): void {
+    this.generateThread(false);
+  }
+
+  onRegenerate(): void {
+    if (!this.isFeedbackValid()) return;
+    this.generateThread(true);
+  }
+
+  private generateThread(isRegeneration: boolean): void {
     // Mark fields as touched to show validation
     this.topicTouched.set(true);
     this.audienceTouched.set(true);
@@ -101,7 +146,6 @@ export class GeneratorComponent {
     }
 
     this.isGenerating.set(true);
-    const startTime = Date.now();
 
     const request: GenerateThreadRequest = {
       topic: this.topic().trim(),
@@ -110,18 +154,21 @@ export class GeneratorComponent {
       tweetCount: this.tweetCount()
     };
 
+    // Include feedback only for regeneration with non-empty feedback
+    if (isRegeneration && this.feedback().trim()) {
+      request.feedback = this.feedback().trim();
+    }
+
     this.threadService.generateThread(request).subscribe({
       next: response => {
-        const duration = Date.now() - startTime;
-        // eslint-disable-next-line no-console
-        console.log(`Thread generation took ${duration}ms`);
         this.generatedThread.set(response.tweets);
         this.isGenerating.set(false);
+        // Clear feedback after successful regeneration
+        if (isRegeneration) {
+          this.feedback.set('');
+        }
       },
       error: error => {
-        const duration = Date.now() - startTime;
-        // eslint-disable-next-line no-console
-        console.log(`Thread generation failed after ${duration}ms`);
         this.isGenerating.set(false);
         this.handleError(error);
       }
