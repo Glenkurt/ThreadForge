@@ -1,0 +1,17 @@
+<div class="form-group">
+  <label class="form-label" for="brand-guidelines">Brand Guidelines</label>
+  <textarea
+    id="brand-guidelines"
+    class="textarea"
+    [class.error]="error"
+    [placeholder]="placeholder"
+    [rows]="rows"
+    [ngModel]="value"
+    (ngModelChange)="onValueChange($event)"
+    [attr.maxlength]="maxLength"
+  ></textarea>
+  @if (error) {
+    <span class="form-error">{{ error }}</span>
+  }
+  <span class="form-hint">{{ value.length }}/{{ maxLength }} characters</span>
+</div>

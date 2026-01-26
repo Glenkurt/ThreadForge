@@ -43,7 +43,8 @@ public class ExceptionHandlingMiddleware
             ArgumentException => (HttpStatusCode.BadRequest, "Bad Request"),
             UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Unauthorized"),
             KeyNotFoundException => (HttpStatusCode.NotFound, "Not Found"),
-            InvalidOperationException => (HttpStatusCode.Conflict, "Conflict"),
+            HttpRequestException => (HttpStatusCode.BadGateway, "Bad Gateway"),
+            InvalidOperationException => (HttpStatusCode.InternalServerError, "Internal Server Error"),
             _ => (HttpStatusCode.InternalServerError, "Internal Server Error")
         };
 

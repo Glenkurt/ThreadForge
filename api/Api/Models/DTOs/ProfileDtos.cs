@@ -1,3 +1,7 @@
+using System;
+
+#pragma warning disable CS1587
+
 namespace Api.Models.DTOs;
 
 /// <summary>
@@ -8,7 +12,19 @@ public sealed record ProfileAnalysisRequestDto(
     /// Twitter username (with or without @ symbol, 1-15 characters).
     /// </summary>
     /// <example>threadforge</example>
-    string Username
+    string Username,
+
+    /// <summary>
+    /// Profile bio text copied from X (1-400 characters).
+    /// </summary>
+    /// <example>Indie hacker building in public. Sharing lessons, numbers, and mistakes.</example>
+    string ProfileBio,
+
+    /// <summary>
+    /// Recent tweets copied from X (5-30 items, one per line or item).
+    /// </summary>
+    /// <example>["Just shipped v1", "Learned a hard lesson today", "MRR update: $2.1k"]</example>
+    string[] RecentTweets
 );
 
 /// <summary>
@@ -185,3 +201,5 @@ public sealed record RecommendedStrategyDto(
     /// </summary>
     string[] TopicsToExplore
 );
+
+#pragma warning restore CS1587

@@ -6,7 +6,7 @@
       type="button"
       class="action-button"
       [class.success]="copied"
-      (click)="copyTweet()"
+      (click)="copyTweet(tweet)"
       [attr.aria-label]="copied ? 'Copied' : 'Copy tweet'"
     >
       <!-- Checkmark Icon (shown after copy) -->
@@ -53,8 +53,10 @@
   </div>
 
   <div class="tweet-header">
-    <span class="tweet-number">{{ index }}</span>
-    <span class="char-count" [class.over-limit]="isOverLimit"> {{ charCount }}/280 </span>
+    <div class="tweet-meta">
+      <span class="tweet-number">{{ index }}</span>
+      <span class="char-count" [class.over-limit]="isOverLimit"> {{ charCount }}/280 </span>
+    </div>
   </div>
 
   <!-- View Mode -->

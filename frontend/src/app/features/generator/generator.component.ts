@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -8,6 +8,8 @@ import { TimeoutError } from 'rxjs';
 import { ThreadService } from '../../services/thread.service';
 import { GenerateThreadRequest, ToneValue, HookStrength, CtaType, StylePreferences } from '../../models/thread.model';
 import { ThreadPreviewComponent } from '../../components/thread-preview/thread-preview.component';
+import { BrandGuidelinesComponent } from '../../components/brand-guidelines/brand-guidelines.component';
+import { BrandGuidelineService } from '../../services/brand-guideline.service';
 
 type ToneOption = {
   label: string;
@@ -29,13 +31,14 @@ type TriState = true | false | null;
 @Component({
   selector: 'app-generator',
   standalone: true,
-  imports: [CommonModule, FormsModule, ThreadPreviewComponent],
+  imports: [CommonModule, FormsModule, ThreadPreviewComponent, BrandGuidelinesComponent],
   templateUrl: './generator.component.html',
   styleUrl: './generator.component.css'
 })
-export class GeneratorComponent {
+export class GeneratorComponent implements OnInit {
   private readonly threadService = inject(ThreadService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly brandGuidelineService = inject(BrandGuidelineService);
 
   // Form signals
   readonly topic = signal('');
@@ -102,7 +105,7 @@ export class GeneratorComponent {
     const value = this.topic().trim();
     if (!this.topicTouched()) return null;
     if (value.length === 0) return 'Please enter a topic.';
-    if (value.length > 120) return 'Topic must be 120 characters or less.';
+    if (value.length > 1000) return 'Topic must not exceed 1000 characters.';
     return null;
   });
 
@@ -142,7 +145,7 @@ export class GeneratorComponent {
     const topicValue = this.topic().trim();
     const audienceValue = this.audience().trim();
 
-    const topicValid = topicValue.length >= 1 && topicValue.length <= 120;
+    const topicValid = topicValue.length >= 1 && topicValue.length <= 1000;
     const audienceValid = audienceValue.length === 0 || audienceValue.length <= 80;
     const brandGuidelinesValid = this.brandGuidelines().length <= 1500;
     const maxCharsValid = this.maxCharsPerTweet() >= 200 && this.maxCharsPerTweet() <= 280;
@@ -160,6 +163,9 @@ export class GeneratorComponent {
   });
 
   // Methods
+  ngOnInit(): void {
+    this.loadBrandGuideline();
+  }
   selectTone(value: ToneValue): void {
     this.selectedTone.set(value);
   }
@@ -286,6 +292,8 @@ export class GeneratorComponent {
       return;
     }
 
+    this.persistBrandGuideline();
+
     this.isGenerating.set(true);
 
     // Build style preferences
@@ -362,6 +370,27 @@ export class GeneratorComponent {
       horizontalPosition: 'center',
       verticalPosition: 'top',
       panelClass: ['error-toast']
+    });
+  }
+
+  private loadBrandGuideline(): void {
+    this.brandGuidelineService.getBrandGuideline().subscribe({
+      next: response => {
+        this.brandGuidelines.set(response.text || '');
+      },
+      error: () => {
+        this.showErrorToast('Could not load brand guideline. Try again.');
+      }
+    });
+  }
+
+  private persistBrandGuideline(): void {
+    const value = this.brandGuidelines().trim();
+
+    this.brandGuidelineService.saveBrandGuideline(value).subscribe({
+      error: () => {
+        this.showErrorToast('Could not save brand guideline. Try again.');
+      }
     });
   }
 }

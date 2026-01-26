@@ -1,0 +1,36 @@
+<main class="detail-page">
+  <a class="back-link" routerLink="/history">← Back to History</a>
+
+  @if (isLoading()) {
+    <div class="loading">Loading…</div>
+  }
+
+  @if (errorMessage()) {
+    <div class="error">{{ errorMessage() }}</div>
+  }
+
+  @if (!isLoading() && detail() && !errorMessage()) {
+    <header class="detail-header">
+      <div>
+        <h1 class="detail-title">{{ topic }}</h1>
+        <div class="detail-meta">
+          <span>{{ formatDate(detail()!.createdAt) }}</span>
+          <span class="dot">•</span>
+          <span>{{ detail()!.provider }} · {{ detail()!.model }}</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="detail-body">
+      <app-thread-preview
+        [tweets]="tweets()"
+        [isGenerating]="false"
+        (tweetEdited)="onTweetEdited($event)"
+      ></app-thread-preview>
+
+      <div class="note">
+        Edits here are local for now (not saved back to history).
+      </div>
+    </section>
+  }
+</main>

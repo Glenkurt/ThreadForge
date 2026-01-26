@@ -86,7 +86,9 @@ public sealed class ThreadGenerationService : IThreadGenerationService
         }
 
         var tweets = ExtractTweets(result.Content);
-        tweets = EnforceTweetLength(tweets, maxChars).ToArray();
+        var useNumbering = request.StylePreferences?.UseNumbering ?? true;
+
+        ValidateGeneratedTweets(tweets, request.TweetCount, maxChars, useNumbering);
 
         var outputJson = JsonSerializer.Serialize(new { tweets }, JsonOptions);
 
@@ -101,8 +103,16 @@ public sealed class ThreadGenerationService : IThreadGenerationService
             CreatedAt = DateTime.UtcNow
         };
 
-        _db.ThreadDrafts.Add(draft);
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            _db.ThreadDrafts.Add(draft);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to persist thread draft {DraftId}", draft.Id);
+            throw new InvalidOperationException("Thread generation failed. Unable to save draft.");
+        }
 
         return new GenerateThreadResponseDto(
             draft.Id,
@@ -112,6 +122,42 @@ public sealed class ThreadGenerationService : IThreadGenerationService
             draft.Model);
     }
 
+    private static void ValidateGeneratedTweets(
+        string[] tweets,
+        int requestedCount,
+        int maxChars,
+        bool useNumbering)
+    {
+        if (tweets.Length != requestedCount)
+        {
+            throw new InvalidOperationException("Thread generation failed. Try again.");
+        }
+
+        for (var i = 0; i < tweets.Length; i++)
+        {
+            var tweet = tweets[i];
+
+            if (string.IsNullOrWhiteSpace(tweet))
+            {
+                throw new InvalidOperationException("Thread generation failed. Try again.");
+            }
+
+            if (tweet.Length > maxChars)
+            {
+                throw new InvalidOperationException("Thread generation failed. Try again.");
+            }
+
+            if (useNumbering)
+            {
+                var expectedSuffix = $" {i + 1}/{requestedCount}";
+                if (!tweet.EndsWith(expectedSuffix, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException("Thread generation failed. Try again.");
+                }
+            }
+        }
+    }
+
     private static void ValidateRequest(GenerateThreadRequestDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Topic))
@@ -119,9 +165,9 @@ public sealed class ThreadGenerationService : IThreadGenerationService
             throw new ArgumentException("Topic is required");
         }
 
-        if (request.Topic.Length > 500)
+        if (request.Topic.Length > 1000)
         {
-            throw new ArgumentException("Topic is too long");
+            throw new ArgumentException("Topic must not exceed 1000 characters");
         }
 
         if (request.TweetCount is < 3 or > 25)
@@ -398,59 +444,4 @@ public sealed class ThreadGenerationService : IThreadGenerationService
         return i < line.Length ? line[i..].Trim() : string.Empty;
     }
 
-    private static IEnumerable<string> EnforceTweetLength(IEnumerable<string> tweets, int maxLen)
-    {
-        foreach (var tweet in tweets)
-        {
-            if (tweet.Length <= maxLen)
-            {
-                yield return tweet;
-                continue;
-            }
-
-            var parts = SplitToMaxLength(tweet, maxLen).ToList();
-            for (var i = 0; i < parts.Count; i++)
-            {
-                var part = parts[i];
-                // Add continuity marker to all parts except the last
-                if (i < parts.Count - 1)
-                {
-                    yield return part + " 🧵";
-                }
-                else
-                {
-                    yield return part;
-                }
-            }
-        }
-    }
-
-    private static IEnumerable<string> SplitToMaxLength(string text, int maxLen)
-    {
-        // Reserve 2 chars for " 🧵" marker on non-final parts
-        var effectiveMax = maxLen - 2;
-        var remaining = text.Trim();
-
-        while (remaining.Length > maxLen)
-        {
-            var cut = remaining.LastIndexOf(' ', effectiveMax);
-            if (cut < effectiveMax * 0.6)
-            {
-                cut = effectiveMax;
-            }
-
-            var part = remaining[..cut].Trim();
-            if (!string.IsNullOrWhiteSpace(part))
-            {
-                yield return part;
-            }
-
-            remaining = remaining[cut..].Trim();
-        }
-
-        if (!string.IsNullOrWhiteSpace(remaining))
-        {
-            yield return remaining;
-        }
-    }
 }

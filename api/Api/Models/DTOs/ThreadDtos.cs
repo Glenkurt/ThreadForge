@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json;
 
 namespace Api.Models.DTOs;
 
@@ -41,7 +42,7 @@ public sealed record StylePreferencesDto(
 /// </summary>
 public sealed record GenerateThreadRequestDto(
     /// <summary>
-    /// Main subject for the Twitter thread (1-500 characters).
+    /// Main subject for the Twitter thread (1-1000 characters).
     /// </summary>
     /// <example>How to build in public as an indie hacker</example>
     string Topic,
@@ -111,6 +112,79 @@ public sealed record GenerateThreadResponseDto(
     /// UTC timestamp when the thread was generated.
     /// </summary>
     DateTime CreatedAt,
+
+    /// <summary>
+    /// AI provider used for generation (e.g., "xai").
+    /// </summary>
+    string Provider,
+
+    /// <summary>
+    /// AI model used for generation (e.g., "grok-2-latest").
+    /// </summary>
+    string Model);
+
+/// <summary>
+/// Summary item for a previously generated thread.
+/// </summary>
+public sealed record ThreadHistoryListItemDto(
+    /// <summary>
+    /// Unique identifier for the saved thread.
+    /// </summary>
+    Guid Id,
+
+    /// <summary>
+    /// UTC timestamp when the thread was generated.
+    /// </summary>
+    DateTime CreatedAt,
+
+    /// <summary>
+    /// Short preview of the topic.
+    /// </summary>
+    string TopicPreview,
+
+    /// <summary>
+    /// Total number of tweets in the saved output.
+    /// </summary>
+    int TweetCount,
+
+    /// <summary>
+    /// Short preview of the first tweet.
+    /// </summary>
+    string FirstTweetPreview,
+
+    /// <summary>
+    /// AI provider used for generation (e.g., "xai").
+    /// </summary>
+    string Provider,
+
+    /// <summary>
+    /// AI model used for generation (e.g., "grok-2-latest").
+    /// </summary>
+    string Model);
+
+/// <summary>
+/// Detailed view of a previously generated thread.
+/// </summary>
+public sealed record ThreadHistoryDetailDto(
+    /// <summary>
+    /// Unique identifier for the saved thread.
+    /// </summary>
+    Guid Id,
+
+    /// <summary>
+    /// UTC timestamp when the thread was generated.
+    /// </summary>
+    DateTime CreatedAt,
+
+    /// <summary>
+    /// Stored request payload used to generate the thread.
+    /// </summary>
+    JsonElement Request,
+
+    /// <summary>
+    /// Stored output tweets.
+    /// </summary>
+    string[] Tweets,
 
     /// <summary>
     /// AI provider used for generation (e.g., "xai").

@@ -52,7 +52,10 @@ public sealed class XaiChatClient : IXaiChatClient
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"xAI request failed: {(int)response.StatusCode} {response.ReasonPhrase}");
+            throw new HttpRequestException(
+                $"xAI request failed: {(int)response.StatusCode} {response.ReasonPhrase}",
+                null,
+                response.StatusCode);
         }
 
         using var doc = JsonDocument.Parse(responseBody);

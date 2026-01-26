@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<ApplicationUser> Users => Set<ApplicationUser>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<ThreadDraft> ThreadDrafts => Set<ThreadDraft>();
+    public DbSet<BrandGuideline> BrandGuidelines => Set<BrandGuideline>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -50,6 +51,13 @@ public class AppDbContext : DbContext
             entity.Property(t => t.Provider).IsRequired().HasMaxLength(64);
             entity.Property(t => t.Model).IsRequired().HasMaxLength(128);
             entity.Property(t => t.CreatedAt).IsRequired();
+        });
+
+        modelBuilder.Entity<BrandGuideline>(entity =>
+        {
+            entity.HasKey(b => b.Id);
+            entity.Property(b => b.Text).IsRequired().HasMaxLength(1500);
+            entity.Property(b => b.UpdatedAt).IsRequired();
         });
     }
 }

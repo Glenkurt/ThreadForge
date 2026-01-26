@@ -1,0 +1,54 @@
+<main class="history-page">
+  <header class="history-header">
+    <div>
+      <h1 class="history-title">History</h1>
+      <p class="history-subtitle">All previously generated threads</p>
+    </div>
+    <button type="button" class="button-secondary" (click)="loadFirstPage()" [disabled]="isLoading()">
+      Refresh
+    </button>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="history-error">{{ errorMessage() }}</div>
+  }
+
+  @if (isLoading() && items().length === 0) {
+    <div class="cards-grid">
+      @for (n of [1,2,3]; track n) {
+        <div class="history-card skeleton"></div>
+      }
+    </div>
+  }
+
+  @if (!isLoading() && items().length === 0 && !errorMessage()) {
+    <div class="history-empty">No threads yet</div>
+  }
+
+  @if (items().length > 0) {
+    <div class="cards-grid">
+      @for (item of items(); track item.id) {
+        <a class="history-card" [routerLink]="['/history', item.id]">
+          <div class="card-meta">
+            <span class="pill">{{ item.tweetCount }} tweets</span>
+            <span class="timestamp">{{ formatDate(item.createdAt) }}</span>
+          </div>
+
+          <div class="card-topic">{{ item.topicPreview || 'Untitled topic' }}</div>
+          <div class="card-first">{{ item.firstTweetPreview }}</div>
+
+          <div class="card-footer">
+            <span class="muted">{{ item.provider }} · {{ item.model }}</span>
+            <span class="cta">Open →</span>
+          </div>
+        </a>
+      }
+    </div>
+
+    <div class="load-more">
+      <button type="button" class="button-secondary" (click)="loadMore()" [disabled]="isLoading()">
+        {{ isLoading() ? 'Loading…' : 'Load more' }}
+      </button>
+    </div>
+  }
+</main>

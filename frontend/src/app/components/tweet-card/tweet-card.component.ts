@@ -33,8 +33,8 @@ export class TweetCardComponent {
   }
 
   // Copy functionality
-  copyTweet(): void {
-    navigator.clipboard.writeText(this.tweet).then(
+  copyTweet(text: string): void {
+    navigator.clipboard.writeText(text).then(
       () => {
         this.showToast('Tweet copied to clipboard');
         this.copied = true;
@@ -65,9 +65,10 @@ export class TweetCardComponent {
   }
 
   onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault();
       this.saveEdit();
+      return;
     }
     if (event.key === 'Escape') {
       this.cancelEdit();

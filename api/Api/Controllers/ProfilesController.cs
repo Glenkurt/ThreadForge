@@ -47,7 +47,18 @@ public sealed class ProfilesController : ControllerBase
             clientId = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         }
 
-        var result = await _profileAnalysis.AnalyzeAsync(request, clientId, cancellationToken);
-        return Ok(result);
+        try
+        {
+            var result = await _profileAnalysis.AnalyzeAsync(request, clientId, cancellationToken);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ErrorResponseDto(ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponseDto(ex.Message));
+        }
     }
 }

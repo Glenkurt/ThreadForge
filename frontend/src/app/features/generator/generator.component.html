@@ -36,21 +36,21 @@
               Topic
               <span class="required-indicator">*</span>
             </label>
-            <input
-              type="text"
+            <textarea
               id="topic"
-              class="input"
+              class="textarea"
               [class.error]="topicError()"
               placeholder="What do you want to write about?"
+              rows="3"
               [ngModel]="topic()"
               (ngModelChange)="topic.set($event)"
               (blur)="onTopicBlur()"
-              maxlength="140"
-            />
+              maxlength="1000"
+            ></textarea>
             @if (topicError()) {
               <span class="form-error">{{ topicError() }}</span>
             }
-            <span class="form-hint">{{ topic().trim().length }}/120 characters</span>
+            <span class="form-hint">{{ topic().trim().length }}/1000 characters</span>
           </div>
 
           <!-- Audience Input -->
@@ -167,25 +167,12 @@
           @if (showAdvancedOptions()) {
             <div class="advanced-options">
               <!-- Brand Guidelines -->
-              <div class="form-group">
-                <label class="form-label" for="brand-guidelines">
-                  Brand Guidelines
-                </label>
-                <textarea
-                  id="brand-guidelines"
-                  class="textarea"
-                  [class.error]="brandGuidelinesError()"
-                  placeholder="Describe your brand voice, vocabulary, dos/don'ts, favorite phrases..."
-                  rows="4"
-                  [ngModel]="brandGuidelines()"
-                  (ngModelChange)="brandGuidelines.set($event)"
-                  maxlength="1600"
-                ></textarea>
-                @if (brandGuidelinesError()) {
-                  <span class="form-error">{{ brandGuidelinesError() }}</span>
-                }
-                <span class="form-hint">{{ brandGuidelines().length }}/1500 characters</span>
-              </div>
+              <app-brand-guidelines
+                [value]="brandGuidelines()"
+                [error]="brandGuidelinesError()"
+                [maxLength]="1500"
+                (valueChange)="brandGuidelines.set($event)"
+              ></app-brand-guidelines>
 
               <!-- Example Threads -->
               <div class="form-group">

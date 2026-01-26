@@ -29,9 +29,18 @@
 
 .tweet-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   margin-bottom: var(--space-3);
+  /* Reserve room for the absolute-positioned action buttons (copy/edit) */
+  padding-right: 88px;
+  min-height: 32px;
+}
+
+.tweet-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .tweet-number {
@@ -53,7 +62,7 @@
 .tweet-body {
   color: var(--text-primary);
   font-size: var(--text-base);
-  line-height: 1.5;
+  line-height: 1.65;
   white-space: pre-wrap;
   word-wrap: break-word;
 }

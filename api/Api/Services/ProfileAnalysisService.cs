@@ -33,14 +33,13 @@ public sealed partial class ProfileAnalysisService : IProfileAnalysisService
         CancellationToken cancellationToken)
     {
         var username = ValidateAndNormalizeUsername(request.Username);
-        
-        // Since we can't actually scrape Twitter without API credentials,
-        // we'll generate a brand analysis based on the username using AI
-        // In a real implementation, you'd fetch tweets here using a scraper or API
-        
+
+        var profileBio = ValidateProfileBio(request.ProfileBio);
+        var recentTweets = ValidateRecentTweets(request.RecentTweets);
+
         var model = string.IsNullOrWhiteSpace(_xaiOptions.Model) ? "grok-2-latest" : _xaiOptions.Model;
 
-        var prompt = BuildAnalysisPrompt(username);
+        var prompt = BuildAnalysisPrompt(username, profileBio, recentTweets);
 
         var system = @"You are a brand strategist analyzing a Twitter profile. Generate a comprehensive brand description document as JSON.
 
@@ -89,9 +88,9 @@ Return ONLY valid JSON matching this exact structure (no markdown, no extra text
 
         return new ProfileAnalysisResponseDto(
             username,
-            $"https://twitter.com/{username}",
+            $"https://x.com/{username}",
             DateTime.UtcNow,
-            50, // Simulated tweet count since we can't actually fetch
+            recentTweets.Length,
             brandDescription);
     }
 
@@ -118,28 +117,78 @@ Return ONLY valid JSON matching this exact structure (no markdown, no extra text
         return normalized;
     }
 
-    private static string BuildAnalysisPrompt(string username)
+    private static string ValidateProfileBio(string? profileBio)
     {
-        return $@"Analyze the Twitter profile @{username} and create a comprehensive brand description.
+        var trimmed = profileBio?.Trim() ?? string.Empty;
 
-Based on the username and what you know about typical accounts with similar names, generate a realistic and detailed brand analysis. Consider:
-- What type of content would this account likely post?
-- Who is their target audience?
-- What topics do they cover?
-- What makes them unique?
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            throw new ArgumentException("Please paste the profile bio");
+        }
 
-Be specific and actionable in your analysis. Create a complete brand profile that could be used for content strategy.";
+        if (trimmed.Length > 400)
+        {
+            throw new ArgumentException("Profile bio must not exceed 400 characters");
+        }
+
+        return trimmed;
+    }
+
+    private static string[] ValidateRecentTweets(string[]? recentTweets)
+    {
+        if (recentTweets is null || recentTweets.Length == 0)
+        {
+            throw new ArgumentException("Please paste at least 5 recent tweets");
+        }
+
+        var cleaned = recentTweets
+            .Select(t => t?.Trim() ?? string.Empty)
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .ToArray();
+
+        if (cleaned.Length < 5)
+        {
+            throw new ArgumentException("Please paste at least 5 recent tweets");
+        }
+
+        if (cleaned.Length > 30)
+        {
+            throw new ArgumentException("Please paste no more than 30 tweets");
+        }
+
+        foreach (var tweet in cleaned)
+        {
+            if (tweet.Length > 500)
+            {
+                throw new ArgumentException("Each tweet must not exceed 500 characters");
+            }
+        }
+
+        return cleaned;
+    }
+
+    private static string BuildAnalysisPrompt(string username, string profileBio, string[] recentTweets)
+    {
+        var tweetsBlock = string.Join("\n", recentTweets.Select(t => $"- {t}"));
+
+        return $@"Analyze the X profile @{username} and create a comprehensive brand description based ONLY on the provided bio and tweets.
+
+Do NOT invent or assume any facts (follower count, engagement, posting frequency, etc.). If information is missing, state it as unknown.
+
+Profile bio:
+{profileBio}
+
+Recent tweets (use these as the sole source of truth):
+{tweetsBlock}
+
+Return a complete brand profile that could be used for content strategy.";
     }
 
     private BrandDescriptionDto ParseBrandDescription(string raw)
     {
         try
         {
-            // Try to extract JSON from the response
-            var jsonMatch = JsonExtractRegex().Match(raw);
-            var jsonStr = jsonMatch.Success ? jsonMatch.Value : raw;
-            
-            var parsed = JsonSerializer.Deserialize<BrandDescriptionJson>(jsonStr, JsonOptions);
+            var parsed = JsonSerializer.Deserialize<BrandDescriptionJson>(raw, JsonOptions);
             
             if (parsed == null)
             {
@@ -179,46 +228,14 @@ Be specific and actionable in your analysis. Create a complete brand profile tha
         }
         catch (JsonException ex)
         {
-            _logger.LogWarning(ex, "Failed to parse AI response as JSON, using fallback");
-            return CreateFallbackBrandDescription();
+            _logger.LogWarning(ex, "Failed to parse AI response as JSON");
+            throw new InvalidOperationException("Brand analysis failed. Try again.");
         }
-    }
-
-    private static BrandDescriptionDto CreateFallbackBrandDescription()
-    {
-        return new BrandDescriptionDto(
-            "This profile appears to focus on sharing valuable content with their audience. They maintain an active presence and engage with their community regularly.",
-            new BrandVoiceDto("Professional and approachable", "Clear and concise", "Helpful and informative"),
-            new TargetAudienceDto(
-                "Professionals and enthusiasts interested in their niche",
-                "Age 25-45, digitally savvy, growth-oriented",
-                ["Finding reliable information", "Building skills", "Staying current"]
-            ),
-            ["Industry insights", "Best practices", "Trends and updates"],
-            new ContentPatternsDto(
-                "Mix of threads and single tweets",
-                "Concise, focused messages",
-                "Hook, value, call-to-action"
-            ),
-            new EngagementInsightsDto(
-                ["How-to content", "Industry insights", "Personal stories"],
-                "Questions and direct engagement prompts",
-                "Daily to weekly posting"
-            ),
-            ["Authentic voice", "Consistent presence"],
-            new RecommendedStrategyDto(
-                ["Educational threads", "Behind-the-scenes content"],
-                "Stay authentic and provide value",
-                ["Adjacent topics", "Collaborations", "Community building"]
-            )
-        );
     }
 
     [GeneratedRegex(@"^[a-zA-Z0-9_]+$")]
     private static partial Regex UsernameRegex();
 
-    [GeneratedRegex(@"\{[\s\S]*\}")]
-    private static partial Regex JsonExtractRegex();
 
     // Internal classes for JSON parsing
     private sealed class BrandDescriptionJson

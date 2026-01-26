@@ -20,6 +20,16 @@ export const routes: Routes = [
       import('./features/generator/generator.component').then(m => m.GeneratorComponent)
   },
   {
+    path: 'history',
+    loadComponent: () =>
+      import('./features/history/history-list.component').then(m => m.HistoryListComponent)
+  },
+  {
+    path: 'history/:id',
+    loadComponent: () =>
+      import('./features/history/history-detail.component').then(m => m.HistoryDetailComponent)
+  },
+  {
     path: 'analyze',
     loadComponent: () =>
       import('./features/profile-analysis/profile-analysis.component').then(m => m.ProfileAnalysisComponent)
