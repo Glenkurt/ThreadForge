@@ -1,0 +1,268 @@
+<div class="profile-analysis-container">
+  <div class="header">
+    <h1>🔍 Analyze Twitter Profile</h1>
+    <p class="subtitle">Generate a brand description document from any public Twitter profile</p>
+  </div>
+
+  <div class="input-section">
+    <div class="input-group">
+      <label for="username">Twitter Username</label>
+      <div class="input-wrapper">
+        <span class="at-symbol">&#64;</span>
+        <input
+          id="username"
+          type="text"
+          placeholder="Enter username (e.g., threadforge)"
+          [ngModel]="username()"
+          (ngModelChange)="username.set($event)"
+          [disabled]="isLoading()"
+          (keyup.enter)="analyzeProfile()"
+          maxlength="15"
+        />
+      </div>
+    </div>
+    <button 
+      class="analyze-btn" 
+      (click)="analyzeProfile()" 
+      [disabled]="isLoading() || !username().trim()">
+      @if (isLoading()) {
+        <span class="spinner"></span>
+        Analyzing...
+      } @else {
+        Analyze Profile
+      }
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-message">
+      <div class="loading-spinner"></div>
+      <p>Analyzing &#64;{{ username() }} profile... This may take up to 30 seconds.</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-message">
+      <span class="error-icon">⚠️</span>
+      {{ error() }}
+    </div>
+  }
+
+  @if (result(); as analysis) {
+    <div class="results-section">
+      <div class="results-header">
+        <div class="profile-info">
+          <h2>&#64;{{ analysis.username }}</h2>
+          <a [href]="analysis.profileUrl" target="_blank" class="profile-link">View on Twitter →</a>
+        </div>
+        <div class="action-buttons">
+          <button class="action-btn copy-btn" (click)="copyToClipboard()">
+            @if (copySuccess()) {
+              ✓ Copied!
+            } @else {
+              📋 Copy
+            }
+          </button>
+          <button class="action-btn download-btn" (click)="downloadAnalysis()">
+            @if (downloadSuccess()) {
+              ✓ Downloaded!
+            } @else {
+              ⬇️ Download
+            }
+          </button>
+        </div>
+      </div>
+
+      <div class="brand-description">
+        <!-- Overview -->
+        <div class="section" [class.expanded]="isSectionExpanded('overview')">
+          <div class="section-header" (click)="toggleSection('overview')">
+            <h3>📝 Overview</h3>
+            <span class="toggle-icon">{{ isSectionExpanded('overview') ? '−' : '+' }}</span>
+          </div>
+          @if (isSectionExpanded('overview')) {
+            <div class="section-content">
+              <p>{{ analysis.brandDescription.overview }}</p>
+            </div>
+          }
+        </div>
+
+        <!-- Brand Voice -->
+        <div class="section" [class.expanded]="isSectionExpanded('brandVoice')">
+          <div class="section-header" (click)="toggleSection('brandVoice')">
+            <h3>🎙️ Brand Voice</h3>
+            <span class="toggle-icon">{{ isSectionExpanded('brandVoice') ? '−' : '+' }}</span>
+          </div>
+          @if (isSectionExpanded('brandVoice')) {
+            <div class="section-content">
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="label">Tone</span>
+                  <span class="value">{{ analysis.brandDescription.brandVoice.tone }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Style</span>
+                  <span class="value">{{ analysis.brandDescription.brandVoice.style }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Personality</span>
+                  <span class="value">{{ analysis.brandDescription.brandVoice.personality }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Target Audience -->
+        <div class="section" [class.expanded]="isSectionExpanded('targetAudience')">
+          <div class="section-header" (click)="toggleSection('targetAudience')">
+            <h3>👥 Target Audience</h3>
+            <span class="toggle-icon">{{ isSectionExpanded('targetAudience') ? '−' : '+' }}</span>
+          </div>
+          @if (isSectionExpanded('targetAudience')) {
+            <div class="section-content">
+              <div class="info-item full-width">
+                <span class="label">Primary Audience</span>
+                <span class="value">{{ analysis.brandDescription.targetAudience.primary }}</span>
+              </div>
+              <div class="info-item full-width">
+                <span class="label">Demographics</span>
+                <span class="value">{{ analysis.brandDescription.targetAudience.demographics }}</span>
+              </div>
+              <div class="info-item full-width">
+                <span class="label">Pain Points</span>
+                <ul class="bullet-list">
+                  @for (point of analysis.brandDescription.targetAudience.painPoints; track point) {
+                    <li>{{ point }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Content Pillars -->
+        <div class="section" [class.expanded]="isSectionExpanded('contentPillars')">
+          <div class="section-header" (click)="toggleSection('contentPillars')">
+            <h3>📚 Content Pillars</h3>
+            <span class="toggle-icon">{{ isSectionExpanded('contentPillars') ? '−' : '+' }}</span>
+          </div>
+          @if (isSectionExpanded('contentPillars')) {
+            <div class="section-content">
+              <div class="tags">
+                @for (pillar of analysis.brandDescription.contentPillars; track pillar) {
+                  <span class="tag">{{ pillar }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Content Patterns -->
+        <div class="section" [class.expanded]="isSectionExpanded('contentPatterns')">
+          <div class="section-header" (click)="toggleSection('contentPatterns')">
+            <h3>📊 Content Patterns</h3>
+            <span class="toggle-icon">{{ isSectionExpanded('contentPatterns') ? '−' : '+' }}</span>
+          </div>
+          @if (isSectionExpanded('contentPatterns')) {
+            <div class="section-content">
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="label">Format</span>
+                  <span class="value">{{ analysis.brandDescription.contentPatterns.format }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Length</span>
+                  <span class="value">{{ analysis.brandDescription.contentPatterns.length }}</span>
+                </div>
+                <div class="info-item full-width">
+                  <span class="label">Structure</span>
+                  <span class="value">{{ analysis.brandDescription.contentPatterns.structure }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Engagement Insights -->
+        <div class="section" [class.expanded]="isSectionExpanded('engagementInsights')">
+          <div class="section-header" (click)="toggleSection('engagementInsights')">
+            <h3>📈 Engagement Insights</h3>
+            <span class="toggle-icon">{{ isSectionExpanded('engagementInsights') ? '−' : '+' }}</span>
+          </div>
+          @if (isSectionExpanded('engagementInsights')) {
+            <div class="section-content">
+              <div class="info-item full-width">
+                <span class="label">Top Performing Content</span>
+                <ul class="bullet-list">
+                  @for (content of analysis.brandDescription.engagementInsights.topPerformingContent; track content) {
+                    <li>{{ content }}</li>
+                  }
+                </ul>
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="label">CTA Style</span>
+                  <span class="value">{{ analysis.brandDescription.engagementInsights.callToActionStyle }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Posting Frequency</span>
+                  <span class="value">{{ analysis.brandDescription.engagementInsights.postingFrequency }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Unique Differentiators -->
+        <div class="section" [class.expanded]="isSectionExpanded('differentiators')">
+          <div class="section-header" (click)="toggleSection('differentiators')">
+            <h3>⭐ Unique Differentiators</h3>
+            <span class="toggle-icon">{{ isSectionExpanded('differentiators') ? '−' : '+' }}</span>
+          </div>
+          @if (isSectionExpanded('differentiators')) {
+            <div class="section-content">
+              <ul class="bullet-list">
+                @for (diff of analysis.brandDescription.uniqueDifferentiators; track diff) {
+                  <li>{{ diff }}</li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+
+        <!-- Recommended Strategy -->
+        <div class="section" [class.expanded]="isSectionExpanded('strategy')">
+          <div class="section-header" (click)="toggleSection('strategy')">
+            <h3>🎯 Recommended Strategy</h3>
+            <span class="toggle-icon">{{ isSectionExpanded('strategy') ? '−' : '+' }}</span>
+          </div>
+          @if (isSectionExpanded('strategy')) {
+            <div class="section-content">
+              <div class="info-item full-width">
+                <span class="label">Content Types</span>
+                <div class="tags">
+                  @for (type of analysis.brandDescription.recommendedStrategy.contentTypes; track type) {
+                    <span class="tag">{{ type }}</span>
+                  }
+                </div>
+              </div>
+              <div class="info-item full-width">
+                <span class="label">Tone Guidance</span>
+                <span class="value">{{ analysis.brandDescription.recommendedStrategy.toneGuidance }}</span>
+              </div>
+              <div class="info-item full-width">
+                <span class="label">Topics to Explore</span>
+                <ul class="bullet-list">
+                  @for (topic of analysis.brandDescription.recommendedStrategy.topicsToExplore; track topic) {
+                    <li>{{ topic }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

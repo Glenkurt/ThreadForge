@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IHealthService, HealthService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IThreadGenerationService, ThreadGenerationService>();
+        services.AddScoped<IProfileAnalysisService, ProfileAnalysisService>();
 
         return services;
     }

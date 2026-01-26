@@ -30,7 +30,7 @@ public sealed class XaiChatClient : IXaiChatClient
         }
     }
 
-    public async Task<string> CreateChatCompletionAsync(
+    public async Task<XaiChatCompletionResult> CreateChatCompletionAsync(
         string model,
         IReadOnlyList<(string Role, string Content)> messages,
         CancellationToken cancellationToken)
@@ -62,8 +62,23 @@ public sealed class XaiChatClient : IXaiChatClient
             .GetProperty("choices")[0]
             .GetProperty("message")
             .GetProperty("content")
-            .GetString();
+            .GetString() ?? string.Empty;
 
-        return contentText ?? string.Empty;
+        // Parse token usage if available
+        int? promptTokens = null;
+        int? completionTokens = null;
+        int? totalTokens = null;
+
+        if (root.TryGetProperty("usage", out var usage))
+        {
+            if (usage.TryGetProperty("prompt_tokens", out var pt))
+                promptTokens = pt.GetInt32();
+            if (usage.TryGetProperty("completion_tokens", out var ct))
+                completionTokens = ct.GetInt32();
+            if (usage.TryGetProperty("total_tokens", out var tt))
+                totalTokens = tt.GetInt32();
+        }
+
+        return new XaiChatCompletionResult(contentText, promptTokens, completionTokens, totalTokens);
     }
 }

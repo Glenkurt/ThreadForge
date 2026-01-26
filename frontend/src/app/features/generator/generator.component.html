@@ -144,6 +144,182 @@
             {{ isGenerating() ? 'Generating...' : 'Generate' }}
           </button>
 
+          <!-- Advanced Options Toggle -->
+          <button
+            type="button"
+            class="advanced-toggle"
+            (click)="toggleAdvancedOptions()"
+          >
+            <svg
+              class="toggle-icon"
+              [class.rotated]="showAdvancedOptions()"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+            {{ showAdvancedOptions() ? 'Hide Advanced Options' : 'Show Advanced Options' }}
+          </button>
+
+          <!-- Advanced Options Section -->
+          @if (showAdvancedOptions()) {
+            <div class="advanced-options">
+              <!-- Brand Guidelines -->
+              <div class="form-group">
+                <label class="form-label" for="brand-guidelines">
+                  Brand Guidelines
+                </label>
+                <textarea
+                  id="brand-guidelines"
+                  class="textarea"
+                  [class.error]="brandGuidelinesError()"
+                  placeholder="Describe your brand voice, vocabulary, dos/don'ts, favorite phrases..."
+                  rows="4"
+                  [ngModel]="brandGuidelines()"
+                  (ngModelChange)="brandGuidelines.set($event)"
+                  maxlength="1600"
+                ></textarea>
+                @if (brandGuidelinesError()) {
+                  <span class="form-error">{{ brandGuidelinesError() }}</span>
+                }
+                <span class="form-hint">{{ brandGuidelines().length }}/1500 characters</span>
+              </div>
+
+              <!-- Example Threads -->
+              <div class="form-group">
+                <label class="form-label">
+                  Example Threads
+                  <span class="form-hint-inline">(for style matching)</span>
+                </label>
+                @for (example of exampleThreads(); track $index) {
+                  <div class="example-thread-item">
+                    <textarea
+                      class="textarea example-textarea"
+                      [class.error]="getExampleThreadError($index)"
+                      placeholder="Paste a full example thread..."
+                      rows="3"
+                      [ngModel]="example"
+                      (ngModelChange)="updateExampleThread($index, $event)"
+                      maxlength="5100"
+                    ></textarea>
+                    <button
+                      type="button"
+                      class="remove-example-btn"
+                      (click)="removeExampleThread($index)"
+                      title="Remove example"
+                    >
+                      ×
+                    </button>
+                    @if (getExampleThreadError($index)) {
+                      <span class="form-error">{{ getExampleThreadError($index) }}</span>
+                    }
+                    <span class="form-hint">{{ example.length }}/5000 characters</span>
+                  </div>
+                }
+                @if (canAddExampleThread()) {
+                  <button
+                    type="button"
+                    class="add-example-btn"
+                    (click)="addExampleThread()"
+                  >
+                    + Add Example Thread
+                  </button>
+                }
+                @if (!canAddExampleThread()) {
+                  <span class="form-hint">Maximum 3 examples reached</span>
+                }
+              </div>
+
+              <!-- Style Preferences -->
+              <div class="style-preferences">
+                <span class="form-label">Style Preferences</span>
+
+                <div class="style-grid">
+                  <!-- Emojis Toggle -->
+                  <div class="style-item">
+                    <span class="style-label">Emojis</span>
+                    <button
+                      type="button"
+                      class="tri-toggle"
+                      (click)="cycleEmojis()"
+                    >
+                      {{ getEmojiLabel() }}
+                    </button>
+                  </div>
+
+                  <!-- Numbering Toggle -->
+                  <div class="style-item">
+                    <span class="style-label">Numbering</span>
+                    <button
+                      type="button"
+                      class="tri-toggle"
+                      (click)="cycleNumbering()"
+                    >
+                      {{ getNumberingLabel() }}
+                    </button>
+                  </div>
+
+                  <!-- Max Chars -->
+                  <div class="style-item">
+                    <span class="style-label">Max Chars</span>
+                    <input
+                      type="number"
+                      class="chars-input"
+                      [class.error]="maxCharsError()"
+                      min="200"
+                      max="280"
+                      [ngModel]="maxCharsPerTweet()"
+                      (ngModelChange)="maxCharsPerTweet.set($event)"
+                    />
+                  </div>
+
+                  <!-- Hook Style -->
+                  <div class="style-item">
+                    <span class="style-label">Hook Style</span>
+                    <select
+                      class="style-select"
+                      [ngModel]="hookStrength()"
+                      (ngModelChange)="hookStrength.set($event)"
+                    >
+                      @for (option of hookOptions; track option.value) {
+                        <option [ngValue]="option.value">{{ option.label }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- CTA Type -->
+                  <div class="style-item">
+                    <span class="style-label">CTA Type</span>
+                    <select
+                      class="style-select"
+                      [ngModel]="ctaType()"
+                      (ngModelChange)="ctaType.set($event)"
+                    >
+                      @for (option of ctaOptions; track option.value) {
+                        <option [ngValue]="option.value">{{ option.label }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                @if (maxCharsError()) {
+                  <span class="form-error">{{ maxCharsError() }}</span>
+                }
+              </div>
+
+              <!-- Clear Advanced Options -->
+              <button
+                type="button"
+                class="clear-advanced-btn"
+                (click)="clearAdvancedOptions()"
+              >
+                Clear Advanced Options
+              </button>
+            </div>
+          }
+
           <!-- Regenerate Section (visible when thread exists) -->
           @if (generatedThread()) {
             <button
@@ -183,13 +359,13 @@
                   [ngModel]="feedback()"
                   (ngModelChange)="feedback.set($event)"
                   (keydown)="onFeedbackKeydown($event)"
-                  maxlength="220"
+                  maxlength="1100"
                 />
                 @if (feedbackError()) {
                   <span class="form-error">{{ feedbackError() }}</span>
                 }
                 <span class="form-hint feedback-hint"
-                  >{{ feedback().trim().length }}/200 characters</span
+                  >{{ feedback().trim().length }}/1000 characters</span
                 >
               }
             </div>

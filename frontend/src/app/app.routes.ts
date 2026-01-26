@@ -20,6 +20,11 @@ export const routes: Routes = [
       import('./features/generator/generator.component').then(m => m.GeneratorComponent)
   },
   {
+    path: 'analyze',
+    loadComponent: () =>
+      import('./features/profile-analysis/profile-analysis.component').then(m => m.ProfileAnalysisComponent)
+  },
+  {
     path: 'dashboard',
     loadComponent: () =>
       import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)

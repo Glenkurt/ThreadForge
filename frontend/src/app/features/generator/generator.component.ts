@@ -6,15 +6,25 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TimeoutError } from 'rxjs';
 
 import { ThreadService } from '../../services/thread.service';
-import { GenerateThreadRequest } from '../../models/thread.model';
+import { GenerateThreadRequest, ToneValue, HookStrength, CtaType, StylePreferences } from '../../models/thread.model';
 import { ThreadPreviewComponent } from '../../components/thread-preview/thread-preview.component';
-
-type ToneValue = 'indie_hacker' | 'educational' | 'provocative' | 'direct' | null;
 
 type ToneOption = {
   label: string;
   value: ToneValue;
 };
+
+type HookOption = {
+  label: string;
+  value: HookStrength;
+};
+
+type CtaOption = {
+  label: string;
+  value: CtaType;
+};
+
+type TriState = true | false | null;
 
 @Component({
   selector: 'app-generator',
@@ -45,13 +55,46 @@ export class GeneratorComponent {
   readonly showFeedback = signal(false);
   readonly feedback = signal('');
 
-  // Tone options
+  // Advanced options state
+  readonly showAdvancedOptions = signal(false);
+  readonly brandGuidelines = signal('');
+  readonly exampleThreads = signal<string[]>([]);
+
+  // Style preferences
+  readonly useEmojis = signal<TriState>(null);
+  readonly useNumbering = signal<TriState>(true);
+  readonly maxCharsPerTweet = signal(260);
+  readonly hookStrength = signal<HookStrength>(null);
+  readonly ctaType = signal<CtaType>(null);
+
+  // Tone options (expanded list)
   readonly toneOptions: ToneOption[] = [
     { label: 'Default', value: null },
     { label: 'Indie Hacker', value: 'indie_hacker' },
+    { label: 'Professional', value: 'professional' },
+    { label: 'Humorous', value: 'humorous' },
+    { label: 'Motivational', value: 'motivational' },
     { label: 'Educational', value: 'educational' },
     { label: 'Provocative', value: 'provocative' },
-    { label: 'Direct', value: 'direct' }
+    { label: 'Storytelling', value: 'storytelling' },
+    { label: 'Clear & Practical', value: 'clear_practical' }
+  ];
+
+  // Hook options
+  readonly hookOptions: HookOption[] = [
+    { label: 'Default', value: null },
+    { label: 'Bold', value: 'bold' },
+    { label: 'Question', value: 'question' },
+    { label: 'Story', value: 'story' },
+    { label: 'Statistic', value: 'stat' }
+  ];
+
+  // CTA options
+  readonly ctaOptions: CtaOption[] = [
+    { label: 'Default', value: null },
+    { label: 'Soft', value: 'soft' },
+    { label: 'Direct', value: 'direct' },
+    { label: 'Question', value: 'question' }
   ];
 
   // Computed validation
@@ -74,9 +117,24 @@ export class GeneratorComponent {
 
   readonly feedbackError = computed(() => {
     const value = this.feedback().trim();
-    if (value.length > 200) {
-      return 'Feedback must be 200 characters or less.';
+    if (value.length > 1000) {
+      return 'Feedback must be 1000 characters or less.';
     }
+    return null;
+  });
+
+  readonly brandGuidelinesError = computed(() => {
+    const value = this.brandGuidelines();
+    if (value.length > 1500) {
+      return 'Brand guidelines must be 1500 characters or less.';
+    }
+    return null;
+  });
+
+  readonly maxCharsError = computed(() => {
+    const value = this.maxCharsPerTweet();
+    if (value < 200) return 'Min 200 characters';
+    if (value > 280) return 'Max 280 characters';
     return null;
   });
 
@@ -86,12 +144,19 @@ export class GeneratorComponent {
 
     const topicValid = topicValue.length >= 1 && topicValue.length <= 120;
     const audienceValid = audienceValue.length === 0 || audienceValue.length <= 80;
+    const brandGuidelinesValid = this.brandGuidelines().length <= 1500;
+    const maxCharsValid = this.maxCharsPerTweet() >= 200 && this.maxCharsPerTweet() <= 280;
+    const exampleThreadsValid = this.exampleThreads().every(e => e.length <= 5000);
 
-    return topicValid && audienceValid;
+    return topicValid && audienceValid && brandGuidelinesValid && maxCharsValid && exampleThreadsValid;
   });
 
   readonly isFeedbackValid = computed(() => {
-    return this.feedback().trim().length <= 200;
+    return this.feedback().trim().length <= 1000;
+  });
+
+  readonly canAddExampleThread = computed(() => {
+    return this.exampleThreads().length < 3;
   });
 
   // Methods
@@ -109,6 +174,82 @@ export class GeneratorComponent {
 
   toggleFeedback(): void {
     this.showFeedback.set(!this.showFeedback());
+  }
+
+  toggleAdvancedOptions(): void {
+    this.showAdvancedOptions.set(!this.showAdvancedOptions());
+  }
+
+  // Emoji toggle cycling: null -> true -> false -> null
+  cycleEmojis(): void {
+    const current = this.useEmojis();
+    if (current === null) {
+      this.useEmojis.set(true);
+    } else if (current === true) {
+      this.useEmojis.set(false);
+    } else {
+      this.useEmojis.set(null);
+    }
+  }
+
+  // Numbering toggle cycling: true -> false -> null -> true
+  cycleNumbering(): void {
+    const current = this.useNumbering();
+    if (current === true) {
+      this.useNumbering.set(false);
+    } else if (current === false) {
+      this.useNumbering.set(null);
+    } else {
+      this.useNumbering.set(true);
+    }
+  }
+
+  getEmojiLabel(): string {
+    const value = this.useEmojis();
+    if (value === null) return 'Default';
+    return value ? 'Yes' : 'No';
+  }
+
+  getNumberingLabel(): string {
+    const value = this.useNumbering();
+    if (value === null) return 'Default';
+    return value ? 'Yes' : 'No';
+  }
+
+  addExampleThread(): void {
+    if (this.canAddExampleThread()) {
+      this.exampleThreads.update(threads => [...threads, '']);
+    }
+  }
+
+  removeExampleThread(index: number): void {
+    this.exampleThreads.update(threads => threads.filter((_, i) => i !== index));
+  }
+
+  updateExampleThread(index: number, value: string): void {
+    this.exampleThreads.update(threads => {
+      const updated = [...threads];
+      updated[index] = value;
+      return updated;
+    });
+  }
+
+  getExampleThreadError(index: number): string | null {
+    const thread = this.exampleThreads()[index];
+    if (thread && thread.length > 5000) {
+      return 'Example must be 5000 characters or less.';
+    }
+    return null;
+  }
+
+  clearAdvancedOptions(): void {
+    this.brandGuidelines.set('');
+    this.exampleThreads.set([]);
+    this.useEmojis.set(null);
+    this.useNumbering.set(true);
+    this.maxCharsPerTweet.set(260);
+    this.hookStrength.set(null);
+    this.ctaType.set(null);
   }
 
   onTweetEdited(event: { index: number; newText: string }): void {
@@ -147,11 +288,26 @@ export class GeneratorComponent {
 
     this.isGenerating.set(true);
 
+    // Build style preferences
+    const stylePreferences: StylePreferences = {
+      useEmojis: this.useEmojis(),
+      useNumbering: this.useNumbering(),
+      maxCharsPerTweet: this.maxCharsPerTweet(),
+      hookStrength: this.hookStrength(),
+      ctaType: this.ctaType()
+    };
+
+    // Filter non-empty example threads
+    const examples = this.exampleThreads().filter(e => e.trim().length > 0);
+
     const request: GenerateThreadRequest = {
       topic: this.topic().trim(),
       audience: this.audience().trim() || null,
       tone: this.selectedTone(),
-      tweetCount: this.tweetCount()
+      tweetCount: this.tweetCount(),
+      brandGuidelines: this.brandGuidelines().trim() || null,
+      exampleThreads: examples.length > 0 ? examples : null,
+      stylePreferences
     };
 
     // Include feedback only for regeneration with non-empty feedback

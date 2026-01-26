@@ -2,7 +2,9 @@ using Api.Data;
 using Api.Extensions;
 using Api.Middleware;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using Serilog;
+using System.Reflection;
 
 // Configure Serilog early to capture startup logs
 Log.Logger = new LoggerConfiguration()
@@ -32,7 +34,28 @@ try
         });
 
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        options.SwaggerDoc("v1", new OpenApiInfo
+        {
+            Title = "ThreadForge API",
+            Version = "v1",
+            Description = "AI-powered Twitter thread generation for indie hackers",
+            Contact = new OpenApiContact
+            {
+                Name = "ThreadForge Support",
+                Email = "support@threadforge.dev"
+            }
+        });
+
+        // Include XML comments
+        var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (File.Exists(xmlPath))
+        {
+            options.IncludeXmlComments(xmlPath);
+        }
+    });
 
     // Database
     if (builder.Environment.IsEnvironment("Testing"))
@@ -92,7 +115,11 @@ try
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
-        app.UseSwaggerUI();
+        app.UseSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "ThreadForge API v1");
+            options.RoutePrefix = "swagger";
+        });
     }
 
     app.UseCors("AllowFrontend");

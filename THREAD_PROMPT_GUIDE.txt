@@ -1,0 +1,76 @@
+ThreadForge — Prompt Construction Guide
+
+1) API request
+Endpoint: POST /api/v1/threads/generate
+Body (JSON):
+{
+  "topic": "How to build in public as an indie hacker",
+  "tone": "indie_hacker",
+  "audience": "Technical founders building SaaS products",
+  "tweetCount": 5,
+  "keyPoints": ["Share revenue numbers", "Be authentic", "Post daily"],
+  "feedback": "Make it more actionable and less theoretical"
+}
+
+2) Controller behavior
+- Reads `X-Client-Id` header (falls back to client IP if missing).
+- Forwards the request to the `ThreadGenerationService`.
+
+3) Validation rules (server-side)
+- `Topic`: required, 1-500 chars.
+- `TweetCount`: must be between 3 and 25.
+- `KeyPoints`: max 20 items.
+- `Feedback`: max 1000 chars.
+
+4) Prompt building (what the service sends to the AI)
+- System message (fixed):
+  You are ThreadForge. Generate a Twitter/X thread as JSON only. Return exactly: {"tweets":["...","..."]}. No extra keys, no markdown.
+
+- User message (constructed from request):
+  Topic: <Topic>
+  Audience: <Audience or default 'builders'>
+  Tone: <Tone or default 'clear, practical'>
+  Tweet count: <TweetCount>
+  Key points:
+  - <point1>
+  - <point2>
+  ...
+  Regeneration feedback: <Feedback (optional)>
+
+  Rules: Each tweet must be <= 280 characters. Include a strong hook in tweet 1 and a concise CTA in the last tweet.
+
+Example user prompt (copyable):
+Topic: How to build in public as an indie hacker
+Audience: Technical founders building SaaS products
+Tone: indie_hacker
+Tweet count: 5
+Key points:
+- Share revenue numbers
+- Be authentic
+- Post daily
+Regeneration feedback: Make it more actionable and less theoretical
+
+Rules: Each tweet must be <= 280 characters. Include a strong hook in tweet 1 and a concise CTA in the last tweet.
+
+5) AI request details
+- Model: configured in options (defaults to `grok-2-latest`).
+- Messages: two messages are sent: system (see above) and user (constructed prompt).
+- IMPORTANT: prompts are not logged by the service.
+
+6) Expected AI output
+- Strict: JSON exactly matching {"tweets":["tweet1","tweet2",...]}.
+- Fallback: service will parse plain lines and strip numbering if AI returns non-JSON.
+
+7) Post-processing performed by the service
+- Extract tweets from JSON or fallback parsing.
+- Enforce 280-character max per tweet (splits long tweets into parts).
+- Persist the draft (prompt JSON, output JSON, provider, model, timestamp).
+
+8) Quick copy checklist
+- Use the sample request body above when calling the endpoint.
+- Keep `Topic` concise (<=500 chars) and set `TweetCount` between 3 and 25.
+- Provide `KeyPoints` as an array of short strings when you want specific bullets included.
+
+---
+File created at repository root: THREAD_PROMPT_GUIDE.txt
+Feel free to copy the example prompt or the sample user prompt block.
