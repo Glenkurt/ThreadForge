@@ -33,16 +33,27 @@ public sealed class XaiChatClient : IXaiChatClient
     public async Task<XaiChatCompletionResult> CreateChatCompletionAsync(
         string model,
         IReadOnlyList<(string Role, string Content)> messages,
+        XaiChatOptions? options,
         CancellationToken cancellationToken)
     {
-        var payload = new
+        var opts = options ?? new XaiChatOptions();
+
+        var payload = new Dictionary<string, object>
         {
-            model,
-            messages = messages.Select(m => new { role = m.Role, content = m.Content }).ToArray(),
-            temperature = 0.7,
-            // xAI is OpenAI-compatible; request strict JSON if supported
-            response_format = new { type = "json_object" }
+            ["model"] = model,
+            ["messages"] = messages.Select(m => new { role = m.Role, content = m.Content }).ToArray(),
+            ["temperature"] = opts.Temperature
         };
+
+        if (opts.MaxTokens.HasValue)
+        {
+            payload["max_tokens"] = opts.MaxTokens.Value;
+        }
+
+        if (opts.JsonMode)
+        {
+            payload["response_format"] = new { type = "json_object" };
+        }
 
         var json = JsonSerializer.Serialize(payload, JsonOptions);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");

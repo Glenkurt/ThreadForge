@@ -51,23 +51,39 @@ Example: 'I analyzed 1,847 viral tweets. 94% followed this exact pattern:'
 Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbook:'"
     };
 
+    // Temperature by tone - controls creativity vs focus
+    private static readonly Dictionary<string, double> ToneTemperatures = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["indie_hacker"] = 0.7,    // Balanced creativity
+        ["professional"] = 0.5,    // More focused, less random
+        ["humorous"] = 0.9,        // High creativity for jokes
+        ["motivational"] = 0.7,    // Balanced
+        ["educational"] = 0.5,     // Focused, accurate
+        ["provocative"] = 0.8,     // Creative for hot takes
+        ["storytelling"] = 0.8,    // Creative for narratives
+        ["clear_practical"] = 0.5  // Focused, actionable
+    };
+
     private static readonly string[] ValidHookStrengths = ["bold", "question", "story", "stat"];
     private static readonly string[] ValidCtaTypes = ["soft", "direct", "question"];
 
     private readonly AppDbContext _db;
     private readonly IXaiChatClient _xai;
     private readonly XaiOptions _xaiOptions;
+    private readonly IThreadQualityService _qualityService;
     private readonly ILogger<ThreadGenerationService> _logger;
 
     public ThreadGenerationService(
         AppDbContext db,
         IXaiChatClient xai,
         IOptions<XaiOptions> xaiOptions,
+        IThreadQualityService qualityService,
         ILogger<ThreadGenerationService> logger)
     {
         _db = db;
         _xai = xai;
         _xaiOptions = xaiOptions.Value;
+        _qualityService = qualityService;
         _logger = logger;
     }
 
@@ -86,6 +102,9 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
         var system = BuildSystemPrompt();
         var user = BuildUserPrompt(request, maxChars);
 
+        // Get temperature based on tone
+        var temperature = GetTemperatureForTone(request.Tone);
+
         var result = await _xai.CreateChatCompletionAsync(
             model,
             new List<(string Role, string Content)>
@@ -93,6 +112,7 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
                 ("system", system),
                 ("user", user)
             },
+            new XaiChatOptions(Temperature: temperature),
             cancellationToken);
 
         // Log token usage
@@ -109,12 +129,12 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
             _logger.LogDebug("Thread generation completed. Token usage not available.");
         }
 
-        var tweets = ExtractTweets(result.Content);
+        var (tweets, hashtags) = ExtractThreadContent(result.Content);
         var useNumbering = request.StylePreferences?.UseNumbering ?? true;
 
         ValidateGeneratedTweets(tweets, request.TweetCount, maxChars, useNumbering);
 
-        var outputJson = JsonSerializer.Serialize(new { tweets }, JsonOptions);
+        var outputJson = JsonSerializer.Serialize(new { tweets, hashtags }, JsonOptions);
 
         var draft = new ThreadDraft
         {
@@ -138,12 +158,27 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
             throw new InvalidOperationException("Thread generation failed. Unable to save draft.");
         }
 
+        // Analyze thread quality
+        var qualityReport = _qualityService.Analyze(tweets, request.Tone);
+        var quality = new ThreadQualityDto(
+            qualityReport.HookScore,
+            qualityReport.CtaScore,
+            qualityReport.OverallScore,
+            qualityReport.Warnings,
+            qualityReport.Suggestions);
+
+        _logger.LogInformation(
+            "Thread quality: Hook={HookScore}, CTA={CtaScore}, Overall={OverallScore}, Warnings={WarningCount}",
+            quality.HookScore, quality.CtaScore, quality.OverallScore, quality.Warnings.Length);
+
         return new GenerateThreadResponseDto(
             draft.Id,
             tweets,
             draft.CreatedAt,
             draft.Provider,
-            draft.Model);
+            draft.Model,
+            hashtags.Length > 0 ? hashtags : null,
+            quality);
     }
 
     private static void ValidateGeneratedTweets(
@@ -270,8 +305,17 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
         return """
             You are ThreadForge, an elite X/Twitter ghostwriter who creates viral threads. Your threads get millions of impressions because you understand what makes people STOP scrolling.
 
-            OUTPUT FORMAT: Return ONLY valid JSON: {"tweets":["tweet1","tweet2",...]}
-            No markdown, no explanations, no extra keys.
+            OUTPUT FORMAT: Return ONLY valid JSON:
+            {"tweets":["tweet1","tweet2",...], "hashtags":["tag1","tag2","tag3"]}
+
+            HASHTAG RULES:
+            - Generate 2-4 relevant hashtags (without # symbol)
+            - Use popular, searchable tags related to the topic
+            - Include one broad tag (e.g., "buildinpublic") and specific ones
+            - No branded hashtags, no spam tags
+            - Good examples: buildinpublic, indiehackers, saas, startups, productivity
+
+            No markdown, no explanations outside the JSON.
 
             HOOK MASTERY (Tweet 1 is EVERYTHING):
             The first tweet determines if anyone reads the rest. Use these proven patterns:
@@ -453,30 +497,59 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
             : tone; // Pass through custom tones as-is
     }
 
+    private static double GetTemperatureForTone(string? tone)
+    {
+        if (string.IsNullOrWhiteSpace(tone))
+        {
+            return 0.7; // Default balanced temperature
+        }
+
+        return ToneTemperatures.TryGetValue(tone, out var temp) ? temp : 0.7;
+    }
+
     private static string Capitalize(string value)
     {
         if (string.IsNullOrWhiteSpace(value)) return value;
         return char.ToUpperInvariant(value[0]) + value[1..].ToLowerInvariant();
     }
 
-    private static string[] ExtractTweets(string raw)
+    private static (string[] Tweets, string[] Hashtags) ExtractThreadContent(string raw)
     {
+        string[] tweets = [];
+        string[] hashtags = [];
+
         if (string.IsNullOrWhiteSpace(raw))
         {
-            return ["(No output)"];
+            return (["(No output)"], []);
         }
 
         // Try strict JSON first
         try
         {
             using var doc = JsonDocument.Parse(raw);
+
             if (doc.RootElement.TryGetProperty("tweets", out var tweetsEl) && tweetsEl.ValueKind == JsonValueKind.Array)
             {
-                return tweetsEl.EnumerateArray()
+                tweets = tweetsEl.EnumerateArray()
                     .Where(e => e.ValueKind == JsonValueKind.String)
                     .Select(e => (e.GetString() ?? string.Empty).Trim())
                     .Where(s => !string.IsNullOrWhiteSpace(s))
                     .ToArray();
+            }
+
+            if (doc.RootElement.TryGetProperty("hashtags", out var hashtagsEl) && hashtagsEl.ValueKind == JsonValueKind.Array)
+            {
+                hashtags = hashtagsEl.EnumerateArray()
+                    .Where(e => e.ValueKind == JsonValueKind.String)
+                    .Select(e => (e.GetString() ?? string.Empty).Trim().TrimStart('#'))
+                    .Where(s => !string.IsNullOrWhiteSpace(s) && s.Length <= 30)
+                    .Take(5)
+                    .ToArray();
+            }
+
+            if (tweets.Length > 0)
+            {
+                return (tweets, hashtags);
             }
         }
         catch
@@ -484,8 +557,8 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
             // ignore and fallback
         }
 
-        // Fallback: split by lines and strip numbering
-        return raw
+        // Fallback: split by lines and strip numbering (no hashtags in fallback)
+        tweets = raw
             .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
             .Select(l => l.Trim())
             .Select(l => l.TrimStart('-', '•', '*', ' '))
@@ -493,6 +566,8 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
             .Select(l => StripLeadingNumbering(l))
             .Where(l => !string.IsNullOrWhiteSpace(l))
             .ToArray();
+
+        return (tweets, []);
     }
 
     private static string StripLeadingNumbering(string line)

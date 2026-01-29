@@ -331,18 +331,35 @@
               Regenerate
             </button>
 
-            <!-- Feedback Toggle -->
+            <!-- Feedback Section with Suggestions -->
             <div class="feedback-section">
               <button type="button" class="feedback-toggle" (click)="toggleFeedback()">
-                {{ showFeedback() ? '− Hide feedback' : '+ Add feedback' }}
+                {{ showFeedback() ? '− Hide feedback' : '+ Add feedback for regeneration' }}
               </button>
 
               @if (showFeedback()) {
+                <!-- Quick Suggestion Chips -->
+                <div class="feedback-suggestions">
+                  <span class="suggestions-label">Quick suggestions:</span>
+                  <div class="suggestion-chips">
+                    @for (suggestion of feedbackSuggestions; track suggestion) {
+                      <button
+                        type="button"
+                        class="suggestion-chip"
+                        [class.active]="feedback().toLowerCase().includes(suggestion.toLowerCase())"
+                        (click)="addFeedbackSuggestion(suggestion)"
+                      >
+                        {{ suggestion }}
+                      </button>
+                    }
+                  </div>
+                </div>
+
                 <input
                   type="text"
                   class="feedback-input"
                   [class.error]="feedbackError()"
-                  placeholder="e.g., Make it more provocative, add statistics..."
+                  placeholder="Or type custom feedback..."
                   [ngModel]="feedback()"
                   (ngModelChange)="feedback.set($event)"
                   (keydown)="onFeedbackKeydown($event)"
@@ -352,10 +369,57 @@
                   <span class="form-error">{{ feedbackError() }}</span>
                 }
                 <span class="form-hint feedback-hint"
-                  >{{ feedback().trim().length }}/1000 characters</span
+                  >{{ feedback().trim().length }}/1000 characters · Press Enter to regenerate</span
                 >
               }
             </div>
+
+            <!-- Quality Scores -->
+            @if (threadQuality()) {
+              <div class="quality-section">
+                <span class="quality-label">Thread Quality</span>
+                <div class="quality-scores">
+                  <div class="quality-score" [class]="getQualityColor(threadQuality()!.hookScore)">
+                    <span class="score-label">Hook</span>
+                    <span class="score-value">{{ threadQuality()!.hookScore }}</span>
+                  </div>
+                  <div class="quality-score" [class]="getQualityColor(threadQuality()!.ctaScore)">
+                    <span class="score-label">CTA</span>
+                    <span class="score-value">{{ threadQuality()!.ctaScore }}</span>
+                  </div>
+                  <div class="quality-score" [class]="getQualityColor(threadQuality()!.overallScore)">
+                    <span class="score-label">Overall</span>
+                    <span class="score-value">{{ threadQuality()!.overallScore }}</span>
+                  </div>
+                </div>
+                @if (threadQuality()!.warnings.length > 0) {
+                  <div class="quality-warnings">
+                    @for (warning of threadQuality()!.warnings; track warning) {
+                      <span class="quality-warning">⚠ {{ warning }}</span>
+                    }
+                  </div>
+                }
+                @if (threadQuality()!.suggestions.length > 0) {
+                  <div class="quality-suggestions">
+                    @for (suggestion of threadQuality()!.suggestions; track suggestion) {
+                      <span class="quality-suggestion">💡 {{ suggestion }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Generated Hashtags -->
+            @if (threadHashtags() && threadHashtags()!.length > 0) {
+              <div class="hashtags-section">
+                <span class="hashtags-label">Suggested Hashtags</span>
+                <div class="hashtag-chips">
+                  @for (tag of threadHashtags(); track tag) {
+                    <span class="hashtag-chip">#{{ tag }}</span>
+                  }
+                </div>
+              </div>
+            }
           }
         </div>
       </div>

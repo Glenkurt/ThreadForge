@@ -44,6 +44,7 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(t => t.Id);
             entity.HasIndex(t => t.ClientId);
+            entity.HasIndex(t => t.ParentThreadId);
 
             entity.Property(t => t.ClientId).IsRequired().HasMaxLength(128);
             entity.Property(t => t.PromptJson).IsRequired().HasColumnType("jsonb");
@@ -51,6 +52,13 @@ public class AppDbContext : DbContext
             entity.Property(t => t.Provider).IsRequired().HasMaxLength(64);
             entity.Property(t => t.Model).IsRequired().HasMaxLength(128);
             entity.Property(t => t.CreatedAt).IsRequired();
+
+            // Feedback tracking
+            entity.Property(t => t.Rating);
+            entity.Property(t => t.RegenerationCount).HasDefaultValue(0);
+            entity.Property(t => t.WasFinalVersion).HasDefaultValue(false);
+            entity.Property(t => t.FeedbackTags).HasMaxLength(500);
+            entity.Property(t => t.ParentThreadId);
         });
 
         modelBuilder.Entity<BrandGuideline>(entity =>

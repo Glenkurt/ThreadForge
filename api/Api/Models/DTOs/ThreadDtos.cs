@@ -4,6 +4,43 @@ using System.Text.Json;
 namespace Api.Models.DTOs;
 
 /// <summary>
+/// Request to submit feedback/rating for a generated thread.
+/// </summary>
+public sealed record SubmitThreadFeedbackDto(
+    /// <summary>
+    /// Rating from 1-5 stars (optional).
+    /// </summary>
+    int? Rating,
+
+    /// <summary>
+    /// Whether the user kept this as their final version.
+    /// </summary>
+    bool? WasFinalVersion,
+
+    /// <summary>
+    /// Feedback tags: too_generic, too_long, weak_hook, not_engaging, too_marketing, off_topic
+    /// </summary>
+    string[]? FeedbackTags);
+
+/// <summary>
+/// Predefined feedback suggestions for regeneration.
+/// </summary>
+public static class FeedbackSuggestions
+{
+    public static readonly string[] All =
+    [
+        "Make it more controversial",
+        "Add specific numbers/statistics",
+        "Shorter sentences",
+        "Stronger hook",
+        "Less marketing-y",
+        "More actionable advice",
+        "Add a question hook",
+        "Make it more personal/story-driven"
+    ];
+}
+
+/// <summary>
 /// Style preferences for fine-grained control over thread formatting.
 /// </summary>
 public sealed record StylePreferencesDto(
@@ -95,6 +132,35 @@ public sealed record GenerateThreadRequestDto(
     StylePreferencesDto? StylePreferences = null);
 
 /// <summary>
+/// Quality analysis of the generated thread.
+/// </summary>
+public sealed record ThreadQualityDto(
+    /// <summary>
+    /// Hook strength score (0-100). Higher is better.
+    /// </summary>
+    int HookScore,
+
+    /// <summary>
+    /// CTA strength score (0-100). Higher is better.
+    /// </summary>
+    int CtaScore,
+
+    /// <summary>
+    /// Overall thread quality score (0-100).
+    /// </summary>
+    int OverallScore,
+
+    /// <summary>
+    /// Quality warnings (issues detected).
+    /// </summary>
+    string[] Warnings,
+
+    /// <summary>
+    /// Improvement suggestions.
+    /// </summary>
+    string[] Suggestions);
+
+/// <summary>
 /// Response containing the generated Twitter thread.
 /// </summary>
 public sealed record GenerateThreadResponseDto(
@@ -121,7 +187,17 @@ public sealed record GenerateThreadResponseDto(
     /// <summary>
     /// AI model used for generation (e.g., "grok-2-latest").
     /// </summary>
-    string Model);
+    string Model,
+
+    /// <summary>
+    /// Suggested hashtags for the thread (2-5 relevant tags).
+    /// </summary>
+    string[]? Hashtags = null,
+
+    /// <summary>
+    /// Quality analysis of the generated thread.
+    /// </summary>
+    ThreadQualityDto? Quality = null);
 
 /// <summary>
 /// Summary item for a previously generated thread.
