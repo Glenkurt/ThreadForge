@@ -62,9 +62,6 @@ export class GeneratorComponent implements OnInit {
   readonly feedback = signal('');
   readonly feedbackSuggestions = FEEDBACK_SUGGESTIONS;
 
-  // Single tweet regeneration state
-  readonly regeneratingIndex = signal<number | null>(null);
-
   // Advanced options state
   readonly showAdvancedOptions = signal(false);
   readonly brandGuidelines = signal('');

@@ -337,15 +337,13 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
 
             THREAD STRUCTURE:
             - Hook (Tweet 1): Pattern interrupt. Make them NEED to read more.
-            - Body: Each tweet builds curiosity for the next. Use cliffhangers between tweets.
+            - Body: Each tweet must earn the next click. End tweets mid-thought when possible.
             - Closer: Strong CTA that feels natural, not salesy.
 
-            CRITICAL WRITING RULES:
-            - Every tweet ≤ specified max characters INCLUDING the numbering suffix
-            - NEVER truncate sentences. Every sentence must be complete.
-            - If content doesn't fit, rewrite shorter - don't cut off mid-word or mid-sentence
-            - Short punchy sentences work better than long ones that get truncated
-            - One complete idea per tweet. White space is your friend.
+            WRITING RULES:
+            - Every tweet ≤ specified max characters
+            - Short sentences. Punch hard.
+            - One idea per tweet. White space is your friend.
             - Use "you" more than "I" - make it about the reader
             - Specific > generic (say "$4,847" not "thousands")
             - Active voice. Present tense when possible.
@@ -474,14 +472,14 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
         }
 
         // Universal rules - stronger emphasis on engagement
-        sb.AppendLine("CRITICAL RULES (Violation = failure):");
-        sb.AppendLine($"1. Every tweet MUST be under {maxChars} characters INCLUDING the X/{request.TweetCount} suffix.");
-        sb.AppendLine("2. NEVER truncate sentences. Every sentence must be COMPLETE. No cutting off mid-word or mid-thought.");
-        sb.AppendLine("3. If content doesn't fit the limit, REWRITE it shorter. Don't just cut it off.");
-        sb.AppendLine("4. Tweet 1 = pattern interrupt. If it doesn't make someone stop scrolling, rewrite it.");
-        sb.AppendLine("5. Use cliffhangers BETWEEN tweets (end with ':' or '...' leading to next tweet), not truncation.");
-        sb.AppendLine("6. Be specific: '$4,231' not 'thousands', '47 days' not 'a few weeks'.");
-        sb.AppendLine("7. Short punchy sentences. One complete idea per tweet.");
+        sb.AppendLine("THREAD RULES (Follow exactly):");
+        sb.AppendLine($"1. Every tweet MUST be under {maxChars} characters. No exceptions.");
+        sb.AppendLine("2. Tweet 1 = pattern interrupt. If it doesn't make someone stop scrolling, rewrite it.");
+        sb.AppendLine("3. Each tweet should create tension for the next. End mid-thought when possible.");
+        sb.AppendLine("4. Be specific: '$4,231' not 'thousands', '47 days' not 'a few weeks'.");
+        sb.AppendLine("5. Short sentences. One idea per tweet. White space makes it readable.");
+        sb.AppendLine("6. Cut fluff: remove 'very', 'really', 'just', 'actually', 'basically'.");
+        sb.AppendLine("7. Use 'you' and 'your' - make it about the reader, not yourself.");
         sb.AppendLine("8. Final tweet: CTA that feels earned, not forced.");
 
         return sb.ToString();

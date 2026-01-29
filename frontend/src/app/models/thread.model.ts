@@ -51,13 +51,3 @@ export const FEEDBACK_SUGGESTIONS = [
   'Add a question hook',
   'Make it more personal/story-driven'
 ] as const;
-
-// Single tweet regeneration
-export interface RegenerateTweetRequest {
-  feedback?: string;
-}
-
-export interface RegenerateTweetResponse {
-  tweet: string;
-  index: number;
-}

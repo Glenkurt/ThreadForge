@@ -229,63 +229,6 @@ public sealed class ThreadsController : ControllerBase
         return Ok(FeedbackSuggestions.All);
     }
 
-    /// <summary>
-    /// Regenerate a single tweet within an existing thread.
-    /// </summary>
-    /// <param name="tweets">The existing tweets in the thread.</param>
-    /// <param name="index">The 1-based index of the tweet to regenerate.</param>
-    /// <param name="request">Optional feedback for the regeneration.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    [HttpPost("regenerate-tweet")]
-    [EnableRateLimiting("threadgen")]
-    [ProducesResponseType(typeof(RegenerateTweetResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status429TooManyRequests)]
-    public async Task<ActionResult<RegenerateTweetResponseDto>> RegenerateTweet(
-        [FromQuery] string[] tweets,
-        [FromQuery] int index,
-        [FromQuery] string? tone,
-        [FromQuery] int maxChars = 260,
-        [FromBody] RegenerateTweetRequestDto? request = null,
-        CancellationToken cancellationToken = default)
-    {
-        if (tweets.Length == 0)
-        {
-            return BadRequest(new ErrorResponseDto("Tweets array is required"));
-        }
-
-        if (index < 1 || index > tweets.Length)
-        {
-            return BadRequest(new ErrorResponseDto($"Index must be between 1 and {tweets.Length}"));
-        }
-
-        if (maxChars < 200 || maxChars > 280)
-        {
-            return BadRequest(new ErrorResponseDto("maxChars must be between 200 and 280"));
-        }
-
-        try
-        {
-            var result = await _threadGeneration.RegenerateSingleTweetAsync(
-                tweets,
-                index,
-                request?.Feedback,
-                tone,
-                maxChars,
-                cancellationToken);
-
-            return Ok(result);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new ErrorResponseDto(ex.Message));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponseDto(ex.Message));
-        }
-    }
-
     private static string ExtractStringProperty(string json, string propertyName)
     {
         try
