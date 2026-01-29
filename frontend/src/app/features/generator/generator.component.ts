@@ -271,6 +271,34 @@ export class GeneratorComponent implements OnInit {
     this.generatedThread.set(updatedThread);
   }
 
+  onRegenerateRequested(event: { index: number; feedback?: string }): void {
+    const currentThread = this.generatedThread();
+    if (!currentThread) return;
+
+    // index is 1-based from the UI, backend expects 1-based as well
+    this.regeneratingIndex.set(event.index);
+
+    this.threadService.regenerateTweet(
+      currentThread,
+      event.index,  // Pass 1-based index directly
+      event.feedback,
+      this.selectedTone() ?? undefined,
+      this.maxCharsPerTweet()
+    ).subscribe({
+      next: response => {
+        // Update the specific tweet (response.index is 1-based, convert to 0-based for array)
+        const updatedThread = [...currentThread];
+        updatedThread[response.index - 1] = response.tweet;
+        this.generatedThread.set(updatedThread);
+        this.regeneratingIndex.set(null);
+      },
+      error: error => {
+        this.regeneratingIndex.set(null);
+        this.handleError(error);
+      }
+    });
+  }
+
   onFeedbackKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();

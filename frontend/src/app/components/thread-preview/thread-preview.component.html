@@ -68,7 +68,9 @@
       *ngFor="let tweet of tweets; let i = index"
       [tweet]="tweet"
       [index]="i + 1"
+      [isRegenerating]="isRegeneratingTweet(i + 1)"
       (tweetEdited)="onTweetEdited($event)"
+      (regenerateRequested)="onRegenerateRequested($event)"
     >
     </app-tweet-card>
   </div>

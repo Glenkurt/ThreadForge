@@ -458,7 +458,9 @@
         <app-thread-preview
           [tweets]="generatedThread()"
           [isGenerating]="isGenerating()"
+          [regeneratingIndex]="regeneratingIndex()"
           (tweetEdited)="onTweetEdited($event)"
+          (regenerateRequested)="onRegenerateRequested($event)"
         >
         </app-thread-preview>
       </div>
