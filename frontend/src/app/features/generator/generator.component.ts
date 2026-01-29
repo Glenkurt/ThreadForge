@@ -62,6 +62,9 @@ export class GeneratorComponent implements OnInit {
   readonly feedback = signal('');
   readonly feedbackSuggestions = FEEDBACK_SUGGESTIONS;
 
+  // Single tweet regeneration state
+  readonly regeneratingIndex = signal<number | null>(null);
+
   // Advanced options state
   readonly showAdvancedOptions = signal(false);
   readonly brandGuidelines = signal('');
@@ -269,6 +272,34 @@ export class GeneratorComponent implements OnInit {
     const updatedThread = [...currentThread];
     updatedThread[event.index - 1] = event.newText;
     this.generatedThread.set(updatedThread);
+  }
+
+  onRegenerateRequested(event: { index: number; feedback?: string }): void {
+    const currentThread = this.generatedThread();
+    if (!currentThread) return;
+
+    // index is 1-based from the UI, backend expects 1-based as well
+    this.regeneratingIndex.set(event.index);
+
+    this.threadService.regenerateTweet(
+      currentThread,
+      event.index,  // Pass 1-based index directly
+      event.feedback,
+      this.selectedTone() ?? undefined,
+      this.maxCharsPerTweet()
+    ).subscribe({
+      next: response => {
+        // Update the specific tweet (response.index is 1-based, convert to 0-based for array)
+        const updatedThread = [...currentThread];
+        updatedThread[response.index - 1] = response.tweet;
+        this.generatedThread.set(updatedThread);
+        this.regeneratingIndex.set(null);
+      },
+      error: error => {
+        this.regeneratingIndex.set(null);
+        this.handleError(error);
+      }
+    });
   }
 
   onFeedbackKeydown(event: KeyboardEvent): void {

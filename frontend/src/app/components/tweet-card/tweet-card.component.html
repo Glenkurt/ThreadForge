@@ -1,6 +1,6 @@
-<div class="tweet-card">
+<div class="tweet-card" [class.regenerating]="isRegenerating">
   <!-- Action Buttons (visible on hover) -->
-  <div class="tweet-actions" *ngIf="!isEditing">
+  <div class="tweet-actions" *ngIf="!isEditing && !isRegenerating">
     <!-- Copy Button -->
     <button
       type="button"
@@ -50,6 +50,33 @@
         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
       </svg>
     </button>
+
+    <!-- Regenerate Button -->
+    <button
+      type="button"
+      class="action-button"
+      [class.active]="showRegenerateInput()"
+      (click)="toggleRegenerateInput()"
+      aria-label="Regenerate tweet"
+      title="Regenerate this tweet"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <polyline points="23 4 23 10 17 10" />
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- Regenerating Spinner -->
+  <div class="regenerating-indicator" *ngIf="isRegenerating">
+    <div class="spinner"></div>
   </div>
 
   <div class="tweet-header">
@@ -78,4 +105,22 @@
       <button type="button" class="edit-button save" (mousedown)="saveEdit()">Save</button>
     </div>
   </div>
+
+  <!-- Regenerate Input -->
+  @if (showRegenerateInput() && !isEditing) {
+    <div class="regenerate-section">
+      <input
+        type="text"
+        class="regenerate-input"
+        placeholder="Optional: What should change? (Press Enter to regenerate)"
+        [ngModel]="regenerateFeedback()"
+        (ngModelChange)="regenerateFeedback.set($event)"
+        (keydown)="onRegenerateKeydown($event)"
+      />
+      <div class="regenerate-actions">
+        <button type="button" class="regen-button cancel" (click)="toggleRegenerateInput()">Cancel</button>
+        <button type="button" class="regen-button confirm" (click)="requestRegenerate()">Regenerate</button>
+      </div>
+    </div>
+  }
 </div>

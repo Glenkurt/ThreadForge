@@ -100,7 +100,11 @@ export class MockThreadDataService {
     const simulatedDelay = Math.floor(Math.random() * 1000) + 500; // 500-1500ms
 
     const response: GenerateThreadResponse = {
-      tweets: variant.tweets.slice(0, request.tweetCount || 5)
+      id: variant.id,
+      tweets: variant.tweets.slice(0, request.tweetCount || 5),
+      createdAt: new Date().toISOString(),
+      provider: variant.provider,
+      model: variant.model
     };
 
     return of(response).pipe(delay(simulatedDelay));

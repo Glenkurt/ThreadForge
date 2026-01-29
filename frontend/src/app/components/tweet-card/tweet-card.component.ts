@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -15,7 +15,9 @@ export class TweetCardComponent {
 
   @Input({ required: true }) tweet!: string;
   @Input({ required: true }) index!: number;
+  @Input() isRegenerating = false;
   @Output() tweetEdited = new EventEmitter<{ index: number; newText: string }>();
+  @Output() regenerateRequested = new EventEmitter<{ index: number; feedback?: string }>();
 
   // Copy state
   copied = false;
@@ -23,6 +25,10 @@ export class TweetCardComponent {
   // Edit state
   isEditing = false;
   editedText = '';
+
+  // Regenerate state
+  showRegenerateInput = signal(false);
+  regenerateFeedback = signal('');
 
   get charCount(): number {
     return this.isEditing ? this.editedText.length : this.tweet.length;
@@ -72,6 +78,31 @@ export class TweetCardComponent {
     }
     if (event.key === 'Escape') {
       this.cancelEdit();
+    }
+  }
+
+  // Regenerate functionality
+  toggleRegenerateInput(): void {
+    this.showRegenerateInput.update(v => !v);
+    if (!this.showRegenerateInput()) {
+      this.regenerateFeedback.set('');
+    }
+  }
+
+  requestRegenerate(): void {
+    const feedback = this.regenerateFeedback().trim() || undefined;
+    this.regenerateRequested.emit({ index: this.index, feedback });
+    this.showRegenerateInput.set(false);
+    this.regenerateFeedback.set('');
+  }
+
+  onRegenerateKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.requestRegenerate();
+    }
+    if (event.key === 'Escape') {
+      this.toggleRegenerateInput();
     }
   }
 

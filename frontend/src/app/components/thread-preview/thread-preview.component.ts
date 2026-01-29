@@ -15,7 +15,9 @@ export class ThreadPreviewComponent {
 
   @Input() tweets: string[] | null = null;
   @Input() isGenerating: boolean = false;
+  @Input() regeneratingIndex: number | null = null;
   @Output() tweetEdited = new EventEmitter<{ index: number; newText: string }>();
+  @Output() regenerateRequested = new EventEmitter<{ index: number; feedback?: string }>();
 
   // Copy all state
   allCopied = false;
@@ -41,6 +43,14 @@ export class ThreadPreviewComponent {
 
   onTweetEdited(event: { index: number; newText: string }): void {
     this.tweetEdited.emit(event);
+  }
+
+  onRegenerateRequested(event: { index: number; feedback?: string }): void {
+    this.regenerateRequested.emit(event);
+  }
+
+  isRegeneratingTweet(index: number): boolean {
+    return this.regeneratingIndex === index;
   }
 
   private showToast(message: string): void {

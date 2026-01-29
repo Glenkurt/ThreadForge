@@ -239,6 +239,30 @@ public sealed record ThreadHistoryListItemDto(
     string Model);
 
 /// <summary>
+/// Request to regenerate a single tweet within a thread.
+/// </summary>
+public sealed record RegenerateTweetRequestDto(
+    /// <summary>
+    /// Optional feedback for how to improve this specific tweet.
+    /// </summary>
+    /// <example>Make it shorter and more punchy</example>
+    string? Feedback = null);
+
+/// <summary>
+/// Response containing the regenerated tweet.
+/// </summary>
+public sealed record RegenerateTweetResponseDto(
+    /// <summary>
+    /// The regenerated tweet text.
+    /// </summary>
+    string Tweet,
+
+    /// <summary>
+    /// The index of the tweet in the thread (1-based).
+    /// </summary>
+    int Index);
+
+/// <summary>
 /// Detailed view of a previously generated thread.
 /// </summary>
 public sealed record ThreadHistoryDetailDto(

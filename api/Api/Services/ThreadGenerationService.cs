@@ -337,13 +337,15 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
 
             THREAD STRUCTURE:
             - Hook (Tweet 1): Pattern interrupt. Make them NEED to read more.
-            - Body: Each tweet must earn the next click. End tweets mid-thought when possible.
+            - Body: Each tweet builds curiosity for the next. Use cliffhangers between tweets.
             - Closer: Strong CTA that feels natural, not salesy.
 
-            WRITING RULES:
-            - Every tweet ≤ specified max characters
-            - Short sentences. Punch hard.
-            - One idea per tweet. White space is your friend.
+            CRITICAL WRITING RULES:
+            - Every tweet ≤ specified max characters INCLUDING the numbering suffix
+            - NEVER truncate sentences. Every sentence must be complete.
+            - If content doesn't fit, rewrite shorter - don't cut off mid-word or mid-sentence
+            - Short punchy sentences work better than long ones that get truncated
+            - One complete idea per tweet. White space is your friend.
             - Use "you" more than "I" - make it about the reader
             - Specific > generic (say "$4,847" not "thousands")
             - Active voice. Present tense when possible.
@@ -472,14 +474,14 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
         }
 
         // Universal rules - stronger emphasis on engagement
-        sb.AppendLine("THREAD RULES (Follow exactly):");
-        sb.AppendLine($"1. Every tweet MUST be under {maxChars} characters. No exceptions.");
-        sb.AppendLine("2. Tweet 1 = pattern interrupt. If it doesn't make someone stop scrolling, rewrite it.");
-        sb.AppendLine("3. Each tweet should create tension for the next. End mid-thought when possible.");
-        sb.AppendLine("4. Be specific: '$4,231' not 'thousands', '47 days' not 'a few weeks'.");
-        sb.AppendLine("5. Short sentences. One idea per tweet. White space makes it readable.");
-        sb.AppendLine("6. Cut fluff: remove 'very', 'really', 'just', 'actually', 'basically'.");
-        sb.AppendLine("7. Use 'you' and 'your' - make it about the reader, not yourself.");
+        sb.AppendLine("CRITICAL RULES (Violation = failure):");
+        sb.AppendLine($"1. Every tweet MUST be under {maxChars} characters INCLUDING the X/{request.TweetCount} suffix.");
+        sb.AppendLine("2. NEVER truncate sentences. Every sentence must be COMPLETE. No cutting off mid-word or mid-thought.");
+        sb.AppendLine("3. If content doesn't fit the limit, REWRITE it shorter. Don't just cut it off.");
+        sb.AppendLine("4. Tweet 1 = pattern interrupt. If it doesn't make someone stop scrolling, rewrite it.");
+        sb.AppendLine("5. Use cliffhangers BETWEEN tweets (end with ':' or '...' leading to next tweet), not truncation.");
+        sb.AppendLine("6. Be specific: '$4,231' not 'thousands', '47 days' not 'a few weeks'.");
+        sb.AppendLine("7. Short punchy sentences. One complete idea per tweet.");
         sb.AppendLine("8. Final tweet: CTA that feels earned, not forced.");
 
         return sb.ToString();
@@ -579,6 +581,114 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
 
         while (i < line.Length && (line[i] == '.' || line[i] == ')' || line[i] == '-' || char.IsWhiteSpace(line[i]))) i++;
         return i < line.Length ? line[i..].Trim() : string.Empty;
+    }
+
+    public async Task<RegenerateTweetResponseDto> RegenerateSingleTweetAsync(
+        string[] existingTweets,
+        int tweetIndex,
+        string? feedback,
+        string? tone,
+        int maxChars,
+        CancellationToken cancellationToken)
+    {
+        if (tweetIndex < 1 || tweetIndex > existingTweets.Length)
+        {
+            throw new ArgumentException($"Tweet index must be between 1 and {existingTweets.Length}");
+        }
+
+        var model = string.IsNullOrWhiteSpace(_xaiOptions.Model) ? "grok-2-latest" : _xaiOptions.Model;
+        var temperature = GetTemperatureForTone(tone);
+        var totalTweets = existingTweets.Length;
+
+        // Build context from surrounding tweets
+        var contextBuilder = new StringBuilder();
+        contextBuilder.AppendLine("You are rewriting ONE tweet within an existing thread. Output ONLY the new tweet text, nothing else.");
+        contextBuilder.AppendLine();
+        contextBuilder.AppendLine("EXISTING THREAD:");
+        for (var i = 0; i < existingTweets.Length; i++)
+        {
+            var marker = i + 1 == tweetIndex ? " <-- REWRITE THIS ONE" : "";
+            contextBuilder.AppendLine($"Tweet {i + 1}: {existingTweets[i]}{marker}");
+        }
+        contextBuilder.AppendLine();
+
+        // Position-specific instructions
+        string positionGuidance;
+        if (tweetIndex == 1)
+        {
+            positionGuidance = "This is the HOOK tweet. It must grab attention and make readers NEED to continue. Use a pattern interrupt.";
+        }
+        else if (tweetIndex == totalTweets)
+        {
+            positionGuidance = "This is the FINAL tweet. It must have a clear call-to-action that feels earned.";
+        }
+        else
+        {
+            positionGuidance = $"This is a BODY tweet. It should flow from tweet {tweetIndex - 1} and lead into tweet {tweetIndex + 1}.";
+        }
+
+        contextBuilder.AppendLine($"POSITION: {positionGuidance}");
+        contextBuilder.AppendLine();
+        contextBuilder.AppendLine($"CONSTRAINTS:");
+        contextBuilder.AppendLine($"- Maximum {maxChars} characters INCLUDING the {tweetIndex}/{totalTweets} suffix");
+        contextBuilder.AppendLine($"- End with: {tweetIndex}/{totalTweets}");
+        contextBuilder.AppendLine("- NEVER truncate. Every sentence must be complete.");
+        contextBuilder.AppendLine("- Keep the same general topic but improve the writing.");
+
+        if (!string.IsNullOrWhiteSpace(feedback))
+        {
+            contextBuilder.AppendLine();
+            contextBuilder.AppendLine($"USER FEEDBACK: {feedback}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(tone))
+        {
+            var toneDesc = GetToneDescription(tone);
+            contextBuilder.AppendLine();
+            contextBuilder.AppendLine($"TONE: {toneDesc}");
+        }
+
+        contextBuilder.AppendLine();
+        contextBuilder.AppendLine("Output ONLY the rewritten tweet text. No quotes, no explanation, no JSON.");
+
+        var result = await _xai.CreateChatCompletionAsync(
+            model,
+            new List<(string Role, string Content)>
+            {
+                ("user", contextBuilder.ToString())
+            },
+            new XaiChatOptions(Temperature: temperature, JsonMode: false),
+            cancellationToken);
+
+        var newTweet = result.Content.Trim().Trim('"');
+
+        // Validate the tweet
+        if (string.IsNullOrWhiteSpace(newTweet))
+        {
+            throw new InvalidOperationException("Failed to regenerate tweet. Try again.");
+        }
+
+        if (newTweet.Length > maxChars)
+        {
+            throw new InvalidOperationException("Regenerated tweet exceeds character limit. Try again.");
+        }
+
+        // Ensure numbering suffix
+        var expectedSuffix = $" {tweetIndex}/{totalTweets}";
+        if (!newTweet.EndsWith(expectedSuffix, StringComparison.Ordinal))
+        {
+            // Try to add it if there's room
+            if (newTweet.Length + expectedSuffix.Length <= maxChars)
+            {
+                newTweet = newTweet.TrimEnd() + expectedSuffix;
+            }
+        }
+
+        _logger.LogInformation(
+            "Single tweet regenerated: index={Index}, chars={Chars}",
+            tweetIndex, newTweet.Length);
+
+        return new RegenerateTweetResponseDto(newTweet, tweetIndex);
     }
 
 }
