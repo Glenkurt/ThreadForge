@@ -159,6 +159,76 @@ public sealed class ThreadsController : ControllerBase
             draft.Model));
     }
 
+    /// <summary>
+    /// Submit feedback/rating for a generated thread.
+    /// </summary>
+    /// <param name="id">Thread id.</param>
+    /// <param name="feedback">Feedback data.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    [HttpPost("{id:guid}/feedback")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SubmitFeedback(
+        [FromRoute] Guid id,
+        [FromBody] SubmitThreadFeedbackDto feedback,
+        CancellationToken cancellationToken)
+    {
+        var draft = await _db.ThreadDrafts.FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+
+        if (draft is null)
+        {
+            return NotFound(new ErrorResponseDto("Thread not found"));
+        }
+
+        // Validate rating
+        if (feedback.Rating.HasValue && (feedback.Rating < 1 || feedback.Rating > 5))
+        {
+            return BadRequest(new ErrorResponseDto("Rating must be between 1 and 5"));
+        }
+
+        // Validate feedback tags
+        var validTags = new[] { "too_generic", "too_long", "weak_hook", "not_engaging", "too_marketing", "off_topic" };
+        if (feedback.FeedbackTags is { Length: > 0 })
+        {
+            var invalidTags = feedback.FeedbackTags.Except(validTags, StringComparer.OrdinalIgnoreCase).ToArray();
+            if (invalidTags.Length > 0)
+            {
+                return BadRequest(new ErrorResponseDto($"Invalid feedback tags: {string.Join(", ", invalidTags)}"));
+            }
+        }
+
+        // Update draft
+        if (feedback.Rating.HasValue)
+        {
+            draft.Rating = feedback.Rating;
+        }
+
+        if (feedback.WasFinalVersion.HasValue)
+        {
+            draft.WasFinalVersion = feedback.WasFinalVersion.Value;
+        }
+
+        if (feedback.FeedbackTags is { Length: > 0 })
+        {
+            draft.FeedbackTags = string.Join(",", feedback.FeedbackTags.Select(t => t.ToLowerInvariant()));
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Get predefined feedback suggestions for regeneration.
+    /// </summary>
+    [HttpGet("feedback-suggestions")]
+    [ProducesResponseType(typeof(string[]), StatusCodes.Status200OK)]
+    public ActionResult<string[]> GetFeedbackSuggestions()
+    {
+        return Ok(FeedbackSuggestions.All);
+    }
+
     private static string ExtractStringProperty(string json, string propertyName)
     {
         try

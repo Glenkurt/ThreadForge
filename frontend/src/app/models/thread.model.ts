@@ -22,6 +22,32 @@ export interface GenerateThreadRequest {
   stylePreferences?: StylePreferences | null;
 }
 
-export interface GenerateThreadResponse {
-  tweets: string[];
+export interface ThreadQuality {
+  hookScore: number;
+  ctaScore: number;
+  overallScore: number;
+  warnings: string[];
+  suggestions: string[];
 }
+
+export interface GenerateThreadResponse {
+  id: string;
+  tweets: string[];
+  createdAt: string;
+  provider: string;
+  model: string;
+  hashtags?: string[];
+  quality?: ThreadQuality;
+}
+
+// Predefined feedback suggestions for quick selection
+export const FEEDBACK_SUGGESTIONS = [
+  'Make it more controversial',
+  'Add specific numbers/statistics',
+  'Shorter sentences',
+  'Stronger hook',
+  'Less marketing-y',
+  'More actionable advice',
+  'Add a question hook',
+  'Make it more personal/story-driven'
+] as const;

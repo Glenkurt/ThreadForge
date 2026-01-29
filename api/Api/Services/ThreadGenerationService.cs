@@ -27,23 +27,63 @@ public sealed class ThreadGenerationService : IThreadGenerationService
         ["clear_practical"] = "Straightforward, actionable, step-by-step. Focus on practical advice over theory."
     };
 
+    // Hook type detailed descriptions with examples
+    private static readonly Dictionary<string, string> HookDescriptions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["bold"] = @"BOLD/CONTRARIAN HOOK: Make a provocative statement that challenges assumptions.
+Start with 'Unpopular opinion:', 'Hot take:', or just state something controversial.
+Example: 'Most productivity advice is keeping you poor. Here's what actually works:'
+Example: 'I deleted my to-do list 6 months ago. Best decision I ever made.'",
+
+        ["question"] = @"QUESTION HOOK: Ask something that creates instant self-reflection.
+The reader should feel called out or deeply curious. Make it specific, not generic.
+Example: 'Why do you check your phone 96 times a day but can't finish a single project?'
+Example: 'What would you build if you knew you couldn't fail? Most people never ask this.'",
+
+        ["story"] = @"STORY HOOK: Drop the reader into the middle of action. Create immediate tension.
+Start with a moment of conflict, failure, or transformation. No setup - just action.
+Example: 'My startup hit $0 in the bank last Tuesday. What I did next saved everything.'
+Example: 'The email said "You're fired." Three months later, I was making 5x my salary.'",
+
+        ["stat"] = @"STAT/NUMBER HOOK: Lead with a specific, surprising number. Concrete beats vague.
+Use exact figures, timeframes, or percentages. Make them believe through specificity.
+Example: 'I analyzed 1,847 viral tweets. 94% followed this exact pattern:'
+Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbook:'"
+    };
+
+    // Temperature by tone - controls creativity vs focus
+    private static readonly Dictionary<string, double> ToneTemperatures = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["indie_hacker"] = 0.7,    // Balanced creativity
+        ["professional"] = 0.5,    // More focused, less random
+        ["humorous"] = 0.9,        // High creativity for jokes
+        ["motivational"] = 0.7,    // Balanced
+        ["educational"] = 0.5,     // Focused, accurate
+        ["provocative"] = 0.8,     // Creative for hot takes
+        ["storytelling"] = 0.8,    // Creative for narratives
+        ["clear_practical"] = 0.5  // Focused, actionable
+    };
+
     private static readonly string[] ValidHookStrengths = ["bold", "question", "story", "stat"];
     private static readonly string[] ValidCtaTypes = ["soft", "direct", "question"];
 
     private readonly AppDbContext _db;
     private readonly IXaiChatClient _xai;
     private readonly XaiOptions _xaiOptions;
+    private readonly IThreadQualityService _qualityService;
     private readonly ILogger<ThreadGenerationService> _logger;
 
     public ThreadGenerationService(
         AppDbContext db,
         IXaiChatClient xai,
         IOptions<XaiOptions> xaiOptions,
+        IThreadQualityService qualityService,
         ILogger<ThreadGenerationService> logger)
     {
         _db = db;
         _xai = xai;
         _xaiOptions = xaiOptions.Value;
+        _qualityService = qualityService;
         _logger = logger;
     }
 
@@ -62,6 +102,9 @@ public sealed class ThreadGenerationService : IThreadGenerationService
         var system = BuildSystemPrompt();
         var user = BuildUserPrompt(request, maxChars);
 
+        // Get temperature based on tone
+        var temperature = GetTemperatureForTone(request.Tone);
+
         var result = await _xai.CreateChatCompletionAsync(
             model,
             new List<(string Role, string Content)>
@@ -69,6 +112,7 @@ public sealed class ThreadGenerationService : IThreadGenerationService
                 ("system", system),
                 ("user", user)
             },
+            new XaiChatOptions(Temperature: temperature),
             cancellationToken);
 
         // Log token usage
@@ -85,12 +129,12 @@ public sealed class ThreadGenerationService : IThreadGenerationService
             _logger.LogDebug("Thread generation completed. Token usage not available.");
         }
 
-        var tweets = ExtractTweets(result.Content);
+        var (tweets, hashtags) = ExtractThreadContent(result.Content);
         var useNumbering = request.StylePreferences?.UseNumbering ?? true;
 
         ValidateGeneratedTweets(tweets, request.TweetCount, maxChars, useNumbering);
 
-        var outputJson = JsonSerializer.Serialize(new { tweets }, JsonOptions);
+        var outputJson = JsonSerializer.Serialize(new { tweets, hashtags }, JsonOptions);
 
         var draft = new ThreadDraft
         {
@@ -114,12 +158,27 @@ public sealed class ThreadGenerationService : IThreadGenerationService
             throw new InvalidOperationException("Thread generation failed. Unable to save draft.");
         }
 
+        // Analyze thread quality
+        var qualityReport = _qualityService.Analyze(tweets, request.Tone);
+        var quality = new ThreadQualityDto(
+            qualityReport.HookScore,
+            qualityReport.CtaScore,
+            qualityReport.OverallScore,
+            qualityReport.Warnings,
+            qualityReport.Suggestions);
+
+        _logger.LogInformation(
+            "Thread quality: Hook={HookScore}, CTA={CtaScore}, Overall={OverallScore}, Warnings={WarningCount}",
+            quality.HookScore, quality.CtaScore, quality.OverallScore, quality.Warnings.Length);
+
         return new GenerateThreadResponseDto(
             draft.Id,
             tweets,
             draft.CreatedAt,
             draft.Provider,
-            draft.Model);
+            draft.Model,
+            hashtags.Length > 0 ? hashtags : null,
+            quality);
     }
 
     private static void ValidateGeneratedTweets(
@@ -244,17 +303,51 @@ public sealed class ThreadGenerationService : IThreadGenerationService
     private static string BuildSystemPrompt()
     {
         return """
-            You are ThreadForge, an expert X/Twitter thread writer. Your only job is to output strictly valid JSON in the exact format: {"tweets":["tweet1","tweet2",...]} with no extra keys, no markdown, no explanations, no numbering outside the tweet text unless specifically requested.
+            You are ThreadForge, an elite X/Twitter ghostwriter who creates viral threads. Your threads get millions of impressions because you understand what makes people STOP scrolling.
 
-            Rules you must follow:
-            - Every tweet must be ≤ the specified max characters (default 260).
-            - Tweet 1 must have a strong, attention-grabbing hook.
-            - Last tweet must end with a clear, concise call-to-action.
-            - Tweets must connect smoothly and read as a natural thread.
-            - Cover all provided key points comprehensively.
-            - Follow any brand guidelines, style preferences, and examples exactly.
-            - Use natural line breaks within tweets for readability.
-            - Be conversational, authentic, and valuable to the reader.
+            OUTPUT FORMAT: Return ONLY valid JSON:
+            {"tweets":["tweet1","tweet2",...], "hashtags":["tag1","tag2","tag3"]}
+
+            HASHTAG RULES:
+            - Generate 2-4 relevant hashtags (without # symbol)
+            - Use popular, searchable tags related to the topic
+            - Include one broad tag (e.g., "buildinpublic") and specific ones
+            - No branded hashtags, no spam tags
+            - Good examples: buildinpublic, indiehackers, saas, startups, productivity
+
+            No markdown, no explanations outside the JSON.
+
+            HOOK MASTERY (Tweet 1 is EVERYTHING):
+            The first tweet determines if anyone reads the rest. Use these proven patterns:
+
+            Pattern 1 - Curiosity Gap: Tease a surprising outcome without revealing it
+            "I mass-unfollowed 2,000 people yesterday. Here's the uncomfortable truth I discovered:"
+
+            Pattern 2 - Contrarian Take: Challenge what everyone believes
+            "Unpopular opinion: Your morning routine is destroying your productivity."
+
+            Pattern 3 - Specific Numbers: Concrete results create credibility
+            "I went from 0 to $47,000/mo in 11 months. No ads. No audience. Just this strategy:"
+
+            Pattern 4 - Story Loop: Start mid-action, create tension
+            "My co-founder called me at 2am. 'We're done.' But what happened next changed everything."
+
+            Pattern 5 - Direct Challenge: Make it personal
+            "You're losing 3 hours every day and don't even realize it. Let me show you where:"
+
+            THREAD STRUCTURE:
+            - Hook (Tweet 1): Pattern interrupt. Make them NEED to read more.
+            - Body: Each tweet must earn the next click. End tweets mid-thought when possible.
+            - Closer: Strong CTA that feels natural, not salesy.
+
+            WRITING RULES:
+            - Every tweet ≤ specified max characters
+            - Short sentences. Punch hard.
+            - One idea per tweet. White space is your friend.
+            - Use "you" more than "I" - make it about the reader
+            - Specific > generic (say "$4,847" not "thousands")
+            - Active voice. Present tense when possible.
+            - No fluff words: very, really, just, actually, basically
             """;
     }
 
@@ -262,7 +355,8 @@ public sealed class ThreadGenerationService : IThreadGenerationService
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine("Write an engaging X/Twitter thread.");
+        sb.AppendLine("Write a VIRAL X/Twitter thread that makes people stop scrolling.");
+        sb.AppendLine("The hook must be impossible to ignore. Every tweet must earn the next click.");
         sb.AppendLine();
 
         // Topic
@@ -348,11 +442,19 @@ public sealed class ThreadGenerationService : IThreadGenerationService
         // Max chars
         sb.AppendLine($"- Max chars per tweet: {maxChars}");
 
-        // Hook strength
-        var hookStrength = string.IsNullOrWhiteSpace(prefs?.HookStrength)
-            ? "Strong hook"
-            : $"{Capitalize(prefs.HookStrength)} style hook";
-        sb.AppendLine($"- First tweet hook: {hookStrength}");
+        // Hook strength - now with detailed guidance
+        sb.AppendLine();
+        sb.AppendLine("HOOK REQUIREMENT (Critical - this determines if anyone reads your thread):");
+        var hookType = prefs?.HookStrength?.ToLowerInvariant() ?? "bold";
+        if (HookDescriptions.TryGetValue(hookType, out var hookGuide))
+        {
+            sb.AppendLine(hookGuide);
+        }
+        else
+        {
+            sb.AppendLine(HookDescriptions["bold"]); // Default to bold
+        }
+        sb.AppendLine();
 
         // CTA type
         var ctaType = string.IsNullOrWhiteSpace(prefs?.CtaType)
@@ -369,12 +471,16 @@ public sealed class ThreadGenerationService : IThreadGenerationService
             sb.AppendLine();
         }
 
-        // Universal rules
-        sb.AppendLine("Universal rules:");
-        sb.AppendLine($"- Keep each tweet under {maxChars} characters and highly readable.");
-        sb.AppendLine("- Use short paragraphs and line breaks within tweets.");
-        sb.AppendLine("- Make it conversational, authentic, and valuable.");
-        sb.AppendLine("- End the last tweet with the CTA.");
+        // Universal rules - stronger emphasis on engagement
+        sb.AppendLine("THREAD RULES (Follow exactly):");
+        sb.AppendLine($"1. Every tweet MUST be under {maxChars} characters. No exceptions.");
+        sb.AppendLine("2. Tweet 1 = pattern interrupt. If it doesn't make someone stop scrolling, rewrite it.");
+        sb.AppendLine("3. Each tweet should create tension for the next. End mid-thought when possible.");
+        sb.AppendLine("4. Be specific: '$4,231' not 'thousands', '47 days' not 'a few weeks'.");
+        sb.AppendLine("5. Short sentences. One idea per tweet. White space makes it readable.");
+        sb.AppendLine("6. Cut fluff: remove 'very', 'really', 'just', 'actually', 'basically'.");
+        sb.AppendLine("7. Use 'you' and 'your' - make it about the reader, not yourself.");
+        sb.AppendLine("8. Final tweet: CTA that feels earned, not forced.");
 
         return sb.ToString();
     }
@@ -391,30 +497,59 @@ public sealed class ThreadGenerationService : IThreadGenerationService
             : tone; // Pass through custom tones as-is
     }
 
+    private static double GetTemperatureForTone(string? tone)
+    {
+        if (string.IsNullOrWhiteSpace(tone))
+        {
+            return 0.7; // Default balanced temperature
+        }
+
+        return ToneTemperatures.TryGetValue(tone, out var temp) ? temp : 0.7;
+    }
+
     private static string Capitalize(string value)
     {
         if (string.IsNullOrWhiteSpace(value)) return value;
         return char.ToUpperInvariant(value[0]) + value[1..].ToLowerInvariant();
     }
 
-    private static string[] ExtractTweets(string raw)
+    private static (string[] Tweets, string[] Hashtags) ExtractThreadContent(string raw)
     {
+        string[] tweets = [];
+        string[] hashtags = [];
+
         if (string.IsNullOrWhiteSpace(raw))
         {
-            return ["(No output)"];
+            return (["(No output)"], []);
         }
 
         // Try strict JSON first
         try
         {
             using var doc = JsonDocument.Parse(raw);
+
             if (doc.RootElement.TryGetProperty("tweets", out var tweetsEl) && tweetsEl.ValueKind == JsonValueKind.Array)
             {
-                return tweetsEl.EnumerateArray()
+                tweets = tweetsEl.EnumerateArray()
                     .Where(e => e.ValueKind == JsonValueKind.String)
                     .Select(e => (e.GetString() ?? string.Empty).Trim())
                     .Where(s => !string.IsNullOrWhiteSpace(s))
                     .ToArray();
+            }
+
+            if (doc.RootElement.TryGetProperty("hashtags", out var hashtagsEl) && hashtagsEl.ValueKind == JsonValueKind.Array)
+            {
+                hashtags = hashtagsEl.EnumerateArray()
+                    .Where(e => e.ValueKind == JsonValueKind.String)
+                    .Select(e => (e.GetString() ?? string.Empty).Trim().TrimStart('#'))
+                    .Where(s => !string.IsNullOrWhiteSpace(s) && s.Length <= 30)
+                    .Take(5)
+                    .ToArray();
+            }
+
+            if (tweets.Length > 0)
+            {
+                return (tweets, hashtags);
             }
         }
         catch
@@ -422,8 +557,8 @@ public sealed class ThreadGenerationService : IThreadGenerationService
             // ignore and fallback
         }
 
-        // Fallback: split by lines and strip numbering
-        return raw
+        // Fallback: split by lines and strip numbering (no hashtags in fallback)
+        tweets = raw
             .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
             .Select(l => l.Trim())
             .Select(l => l.TrimStart('-', '•', '*', ' '))
@@ -431,6 +566,8 @@ public sealed class ThreadGenerationService : IThreadGenerationService
             .Select(l => StripLeadingNumbering(l))
             .Where(l => !string.IsNullOrWhiteSpace(l))
             .ToArray();
+
+        return (tweets, []);
     }
 
     private static string StripLeadingNumbering(string line)

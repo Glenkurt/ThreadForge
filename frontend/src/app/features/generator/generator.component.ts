@@ -6,7 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TimeoutError } from 'rxjs';
 
 import { ThreadService } from '../../services/thread.service';
-import { GenerateThreadRequest, ToneValue, HookStrength, CtaType, StylePreferences } from '../../models/thread.model';
+import { GenerateThreadRequest, ToneValue, HookStrength, CtaType, StylePreferences, ThreadQuality, FEEDBACK_SUGGESTIONS } from '../../models/thread.model';
 import { ThreadPreviewComponent } from '../../components/thread-preview/thread-preview.component';
 import { BrandGuidelinesComponent } from '../../components/brand-guidelines/brand-guidelines.component';
 import { BrandGuidelineService } from '../../services/brand-guideline.service';
@@ -53,10 +53,14 @@ export class GeneratorComponent implements OnInit {
   // Generation state
   readonly isGenerating = signal(false);
   readonly generatedThread = signal<string[] | null>(null);
+  readonly generatedThreadId = signal<string | null>(null);
+  readonly threadQuality = signal<ThreadQuality | null>(null);
+  readonly threadHashtags = signal<string[] | null>(null);
 
   // Feedback state for regeneration
   readonly showFeedback = signal(false);
   readonly feedback = signal('');
+  readonly feedbackSuggestions = FEEDBACK_SUGGESTIONS;
 
   // Advanced options state
   readonly showAdvancedOptions = signal(false);
@@ -274,6 +278,23 @@ export class GeneratorComponent implements OnInit {
     }
   }
 
+  addFeedbackSuggestion(suggestion: string): void {
+    const current = this.feedback().trim();
+    if (current.length === 0) {
+      this.feedback.set(suggestion);
+    } else if (!current.toLowerCase().includes(suggestion.toLowerCase())) {
+      this.feedback.set(current + '. ' + suggestion);
+    }
+    // Show feedback section if hidden
+    this.showFeedback.set(true);
+  }
+
+  getQualityColor(score: number): string {
+    if (score >= 70) return 'quality-good';
+    if (score >= 50) return 'quality-ok';
+    return 'quality-weak';
+  }
+
   onGenerate(): void {
     this.generateThread(false);
   }
@@ -326,6 +347,9 @@ export class GeneratorComponent implements OnInit {
     this.threadService.generateThread(request).subscribe({
       next: response => {
         this.generatedThread.set(response.tweets);
+        this.generatedThreadId.set(response.id);
+        this.threadQuality.set(response.quality ?? null);
+        this.threadHashtags.set(response.hashtags ?? null);
         this.isGenerating.set(false);
         // Clear feedback after successful regeneration
         if (isRegeneration) {
