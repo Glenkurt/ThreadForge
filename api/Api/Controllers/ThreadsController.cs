@@ -229,6 +229,64 @@ public sealed class ThreadsController : ControllerBase
         return Ok(FeedbackSuggestions.All);
     }
 
+    /// <summary>
+    /// Regenerate a single tweet within an existing thread.
+    /// </summary>
+    /// <param name="tweets">The existing tweets in the thread.</param>
+    /// <param name="index">The 1-based index of the tweet to regenerate.</param>
+    /// <param name="maxChars">Maximum characters for the regenerated tweet (200-280).</param>
+    /// <param name="tone">Optional tone override for this tweet.</param>
+    /// <param name="request">Optional feedback for how to improve the tweet.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="200">Tweet regenerated successfully.</response>
+    /// <response code="400">Invalid request parameters.</response>
+    /// <response code="500">Tweet regeneration failed.</response>
+    [HttpPost("regenerate-tweet")]
+    [ProducesResponseType(typeof(RegenerateTweetResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<RegenerateTweetResponseDto>> RegenerateTweet(
+        [FromQuery] string[] tweets,
+        [FromQuery] int index,
+        [FromQuery] int maxChars = 260,
+        [FromQuery] string? tone = null,
+        [FromBody] RegenerateTweetRequestDto? request = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Validate parameters
+        if (tweets is null || tweets.Length == 0)
+        {
+            return BadRequest(new ErrorResponseDto("At least one tweet must be provided"));
+        }
+
+        if (index < 1 || index > tweets.Length)
+        {
+            return BadRequest(new ErrorResponseDto($"Index must be between 1 and {tweets.Length}"));
+        }
+
+        if (maxChars < 200 || maxChars > 280)
+        {
+            return BadRequest(new ErrorResponseDto("maxChars must be between 200 and 280"));
+        }
+
+        try
+        {
+            var result = await _threadGeneration.RegenerateSingleTweetAsync(
+                tweets,
+                index,
+                request?.Feedback,
+                tone,
+                maxChars,
+                cancellationToken);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponseDto(ex.Message));
+        }
+    }
+
     private static string ExtractStringProperty(string json, string propertyName)
     {
         try

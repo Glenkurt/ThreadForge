@@ -42,8 +42,8 @@ Example: 'What would you build if you knew you couldn't fail? Most people never 
 
         ["story"] = @"STORY HOOK: Drop the reader into the middle of action. Create immediate tension.
 Start with a moment of conflict, failure, or transformation. No setup - just action.
-Example: 'My startup hit $0 in the bank last Tuesday. What I did next saved everything.'
-Example: 'The email said "You're fired." Three months later, I was making 5x my salary.'",
+        Example: 'My startup hit $0 in the bank last Tuesday. What I did next saved everything.'
+        Example: 'The email said ""You're fired."" Three months later, I was making 5x my salary.'",
 
         ["stat"] = @"STAT/NUMBER HOOK: Lead with a specific, surprising number. Concrete beats vague.
 Use exact figures, timeframes, or percentages. Make them believe through specificity.

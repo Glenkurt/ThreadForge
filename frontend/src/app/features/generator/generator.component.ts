@@ -61,6 +61,7 @@ export class GeneratorComponent implements OnInit {
   readonly showFeedback = signal(false);
   readonly feedback = signal('');
   readonly feedbackSuggestions = FEEDBACK_SUGGESTIONS;
+  readonly regeneratingIndex = signal<number | null>(null);
 
   // Advanced options state
   readonly showAdvancedOptions = signal(false);

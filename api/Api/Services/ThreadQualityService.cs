@@ -189,6 +189,6 @@ public sealed partial class ThreadQualityService : IThreadQualityService
     [GeneratedRegex(@"\$?\d[\d,\.]*[KkMmBb]?|\d+%|\d+x", RegexOptions.Compiled)]
     private static partial Regex NumberPattern();
 
-    [GeneratedRegex(@"[\u{1F300}-\u{1F9FF}]", RegexOptions.Compiled)]
+    [GeneratedRegex(@"[\uD83C-\uDBFF][\uDC00-\uDFFF]", RegexOptions.Compiled)]
     private static partial Regex EmojiPattern();
 }

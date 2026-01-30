@@ -40,6 +40,15 @@ export interface GenerateThreadResponse {
   quality?: ThreadQuality;
 }
 
+export interface RegenerateTweetRequest {
+  feedback?: string;
+}
+
+export interface RegenerateTweetResponse {
+  tweet: string;
+  index: number;
+}
+
 // Predefined feedback suggestions for quick selection
 export const FEEDBACK_SUGGESTIONS = [
   'Make it more controversial',

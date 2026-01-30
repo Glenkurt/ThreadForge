@@ -18,7 +18,7 @@ public sealed partial class ProfileAnalysisService : IProfileAnalysisService
     private readonly ILogger<ProfileAnalysisService> _logger;
 
     public ProfileAnalysisService(
-        IXaiChatClient xai, 
+        IXaiChatClient xai,
         IOptions<XaiOptions> xaiOptions,
         ILogger<ProfileAnalysisService> logger)
     {
@@ -82,6 +82,7 @@ Return ONLY valid JSON matching this exact structure (no markdown, no extra text
                 ("system", system),
                 ("user", prompt)
             },
+            null,
             cancellationToken);
 
         var brandDescription = ParseBrandDescription(result.Content);
@@ -189,7 +190,7 @@ Return a complete brand profile that could be used for content strategy.";
         try
         {
             var parsed = JsonSerializer.Deserialize<BrandDescriptionJson>(raw, JsonOptions);
-            
+
             if (parsed == null)
             {
                 throw new InvalidOperationException("Failed to parse brand description");
