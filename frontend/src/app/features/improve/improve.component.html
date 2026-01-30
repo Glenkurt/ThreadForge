@@ -1,0 +1,354 @@
+<!-- Dot Grid Background -->
+<div class="app-bg"></div>
+
+<!-- Main Improve Layout -->
+<main class="improve-page">
+  <div class="improve-layout">
+    <!-- INPUT PANEL (Left Column) -->
+    <aside class="input-column">
+      <div class="panel input-panel">
+        <!-- Panel Header -->
+        <header class="panel-header">
+          <div class="panel-title-row">
+            <svg
+              class="panel-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+            <h2 class="panel-title">Tweet Improver</h2>
+          </div>
+          <p class="panel-subtitle">Transform your draft into a scroll-stopping tweet</p>
+        </header>
+
+        <!-- Form Content -->
+        <div class="improve-form">
+          <!-- Draft Input -->
+          <div class="form-group">
+            <label class="form-label" for="draft">
+              Your Draft
+              <span class="required-indicator">*</span>
+            </label>
+            <textarea
+              id="draft"
+              class="textarea draft-textarea"
+              [class.error]="draftError()"
+              placeholder="Paste or write your tweet draft here..."
+              rows="4"
+              [ngModel]="draft()"
+              (ngModelChange)="draft.set($event)"
+              (blur)="onDraftBlur()"
+              maxlength="550"
+            ></textarea>
+            @if (draftError()) {
+              <span class="form-error">{{ draftError() }}</span>
+            }
+            <span class="form-hint" [class]="charCountClass()">
+              {{ charCount() }}/500 characters
+            </span>
+          </div>
+
+          <!-- Improvement Type Selector -->
+          <div class="form-group">
+            <span class="form-label" id="improvement-label">Improvement Type</span>
+            <div class="improvement-selector" role="radiogroup" aria-labelledby="improvement-label">
+              @for (type of improvementTypes; track type.value) {
+                <button
+                  type="button"
+                  class="improvement-pill"
+                  role="radio"
+                  [attr.aria-checked]="selectedImprovementType() === type.value"
+                  [class.active]="selectedImprovementType() === type.value"
+                  (click)="selectImprovementType(type.value)"
+                  [title]="type.description"
+                >
+                  {{ type.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Tone Selector -->
+          <div class="form-group">
+            <span class="form-label" id="tone-label">Target Tone (optional)</span>
+            <div class="tone-selector" role="radiogroup" aria-labelledby="tone-label">
+              @for (tone of toneOptions; track tone.value) {
+                <button
+                  type="button"
+                  class="tone-pill"
+                  role="radio"
+                  [attr.aria-checked]="selectedTone() === tone.value"
+                  [class.active]="selectedTone() === tone.value"
+                  (click)="selectTone(tone.value)"
+                >
+                  {{ tone.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Preserve Elements (optional) -->
+          <div class="form-group">
+            <label class="form-label" for="preserve">
+              Preserve Elements
+              <span class="form-hint-inline">(optional)</span>
+            </label>
+            <input
+              type="text"
+              id="preserve"
+              class="input"
+              [class.error]="preserveError()"
+              placeholder="e.g., Keep the mention of the launch"
+              [ngModel]="preserveElements()"
+              (ngModelChange)="preserveElements.set($event)"
+              maxlength="220"
+            />
+            @if (preserveError()) {
+              <span class="form-error">{{ preserveError() }}</span>
+            }
+          </div>
+
+          <!-- Additional Instructions (optional) -->
+          <div class="form-group">
+            <label class="form-label" for="instructions">
+              Additional Instructions
+              <span class="form-hint-inline">(optional)</span>
+            </label>
+            <input
+              type="text"
+              id="instructions"
+              class="input"
+              [class.error]="instructionsError()"
+              placeholder="e.g., Add a question to encourage replies"
+              [ngModel]="additionalInstructions()"
+              (ngModelChange)="additionalInstructions.set($event)"
+              maxlength="320"
+            />
+            @if (instructionsError()) {
+              <span class="form-error">{{ instructionsError() }}</span>
+            }
+          </div>
+
+          <!-- Improve Button -->
+          <button
+            type="button"
+            class="button-primary improve-button"
+            [disabled]="!isFormValid() || isImproving()"
+            [attr.aria-busy]="isImproving()"
+            (click)="onImprove()"
+          >
+            <svg
+              *ngIf="!isImproving()"
+              class="button-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 3v18"/>
+              <path d="m8 8 4-5 4 5"/>
+              <path d="m8 16 4 5 4-5"/>
+            </svg>
+            <div *ngIf="isImproving()" class="button-spinner" aria-hidden="true"></div>
+            {{ isImproving() ? 'Improving...' : 'Improve Tweet' }}
+          </button>
+
+          <!-- Clear Button -->
+          @if (draft().length > 0 || result()) {
+            <button
+              type="button"
+              class="clear-button"
+              (click)="clearAll()"
+            >
+              Clear All
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Powered By Badge -->
+      <div class="powered-by">
+        <span class="powered-by-text">Powered by</span>
+        <span class="powered-by-brand">xAI Grok</span>
+      </div>
+    </aside>
+
+    <!-- RESULT PANEL (Right Column) -->
+    <section class="result-column">
+      <div class="panel result-panel">
+        <!-- Panel Header -->
+        <header class="panel-header">
+          <div class="panel-title-row">
+            <svg
+              class="panel-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="9 11 12 14 22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            <h2 class="panel-title">Result</h2>
+          </div>
+        </header>
+
+        <!-- Result Content -->
+        @if (result()) {
+          <div class="result-content">
+            <!-- Comparison View -->
+            <div class="comparison-container">
+              <!-- Original -->
+              <div class="comparison-card original">
+                <div class="comparison-header">
+                  <span class="comparison-label">Original</span>
+                  <span class="char-badge">{{ result()!.original.length }} chars</span>
+                </div>
+                <p class="comparison-text">{{ result()!.original }}</p>
+              </div>
+
+              <!-- Arrow -->
+              <div class="comparison-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14"/>
+                  <path d="m12 5 7 7-7 7"/>
+                </svg>
+              </div>
+
+              <!-- Improved -->
+              <div class="comparison-card improved" [class.selected]="selectedVersion() === 'improved'">
+                <div class="comparison-header">
+                  <span class="comparison-label">Improved</span>
+                  <span class="char-badge" [class]="result()!.isWithinLimit ? 'within' : 'over'">
+                    {{ result()!.characterCount }} chars
+                  </span>
+                </div>
+                <p class="comparison-text">{{ result()!.improved }}</p>
+                <button
+                  type="button"
+                  class="select-version-btn"
+                  [class.active]="selectedVersion() === 'improved'"
+                  (click)="selectVersion('improved')"
+                >
+                  {{ selectedVersion() === 'improved' ? 'Selected' : 'Select' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Alternatives -->
+            @if (result()!.alternatives.length > 0) {
+              <div class="alternatives-section">
+                <span class="alternatives-label">Alternative Versions</span>
+                <div class="alternatives-grid">
+                  @for (alt of result()!.alternatives; track $index; let i = $index) {
+                    <div
+                      class="alternative-card"
+                      [class.selected]="selectedVersion() === (i === 0 ? 'alt1' : 'alt2')"
+                    >
+                      <div class="alternative-header">
+                        <span class="alternative-number">Version {{ i + 2 }}</span>
+                        <span class="char-badge" [class]="alt.length <= 280 ? 'within' : 'over'">
+                          {{ alt.length }} chars
+                        </span>
+                      </div>
+                      <p class="alternative-text">{{ alt }}</p>
+                      <button
+                        type="button"
+                        class="select-version-btn"
+                        [class.active]="selectedVersion() === (i === 0 ? 'alt1' : 'alt2')"
+                        (click)="selectVersion(i === 0 ? 'alt1' : 'alt2')"
+                      >
+                        {{ selectedVersion() === (i === 0 ? 'alt1' : 'alt2') ? 'Selected' : 'Select' }}
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Explanation -->
+            <div class="explanation-section">
+              <span class="explanation-label">What Changed</span>
+              <p class="explanation-text">{{ result()!.explanation }}</p>
+            </div>
+
+            <!-- Actions -->
+            <div class="result-actions">
+              <button
+                type="button"
+                class="action-button copy-button"
+                (click)="copyToClipboard()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  @if (copiedVersion()) {
+                    <polyline points="20 6 9 17 4 12"/>
+                  } @else {
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  }
+                </svg>
+                {{ copiedVersion() ? 'Copied!' : 'Copy Selected' }}
+              </button>
+              <button
+                type="button"
+                class="action-button iterate-button"
+                (click)="useAsNewDraft()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"/>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                </svg>
+                Iterate Further
+              </button>
+            </div>
+
+            <!-- Character Indicator -->
+            <div class="char-indicator">
+              <div class="char-bar">
+                <div
+                  class="char-fill"
+                  [class]="improvedCharClass()"
+                  [style.width.%]="Math.min((improvedCharCount() / 280) * 100, 100)"
+                ></div>
+              </div>
+              <span class="char-count" [class]="improvedCharClass()">
+                {{ improvedCharCount() }}/280
+              </span>
+            </div>
+          </div>
+        } @else {
+          <!-- Empty State -->
+          <div class="result-empty-state">
+            <div class="empty-state-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </div>
+            <h3 class="empty-state-title">Ready to improve</h3>
+            <p class="empty-state-subtitle">
+              Enter your tweet draft and select an improvement type to see the magic happen.
+            </p>
+
+            <!-- Decorative hints -->
+            <div class="empty-state-preview">
+              <div class="preview-card-hint"></div>
+              <div class="preview-card-hint"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+</main>
