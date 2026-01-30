@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IThreadGenerationService, ThreadGenerationService>();
         services.AddScoped<IProfileAnalysisService, ProfileAnalysisService>();
+        services.AddScoped<ITweetImproverService, TweetImproverService>();
         services.AddSingleton<IThreadQualityService, ThreadQualityService>();
 
         return services;
