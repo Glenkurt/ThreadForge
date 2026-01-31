@@ -2,6 +2,7 @@ using System;
 using Api.Data;
 using Api.Models.DTOs;
 using Api.Models.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -40,8 +41,10 @@ public sealed class BrandGuidelinesController : ControllerBase
     /// Save the global brand guideline text.
     /// </summary>
     [HttpPut]
+    [Authorize]
     [ProducesResponseType(typeof(BrandGuidelineDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<BrandGuidelineDto>> Upsert(
         [FromBody] BrandGuidelineDto request,
         CancellationToken cancellationToken)

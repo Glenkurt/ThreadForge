@@ -2,6 +2,7 @@ using System.Text.Json;
 using Api.Data;
 using Api.Models.DTOs;
 using Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -65,14 +66,16 @@ public sealed class ThreadsController : ControllerBase
     }
 
     /// <summary>
-    /// List previously generated threads (global history for MVP).
+    /// List previously generated threads (user's history).
     /// </summary>
     /// <param name="limit">Maximum number of items to return (default 20, max 100).</param>
     /// <param name="offset">Number of items to skip (default 0).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     [HttpGet("history")]
+    [Authorize]
     [ProducesResponseType(typeof(ThreadHistoryListItemDto[]), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ThreadHistoryListItemDto[]>> GetHistory(
         [FromQuery] int? limit,
         [FromQuery] int? offset,
@@ -127,13 +130,15 @@ public sealed class ThreadsController : ControllerBase
     }
 
     /// <summary>
-    /// Get a previously generated thread by id (global history for MVP).
+    /// Get a previously generated thread by id (user's history).
     /// </summary>
     /// <param name="id">Thread id.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     [HttpGet("history/{id:guid}")]
+    [Authorize]
     [ProducesResponseType(typeof(ThreadHistoryDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ThreadHistoryDetailDto>> GetHistoryById(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)
@@ -166,9 +171,11 @@ public sealed class ThreadsController : ControllerBase
     /// <param name="feedback">Feedback data.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     [HttpPost("{id:guid}/feedback")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SubmitFeedback(
         [FromRoute] Guid id,
         [FromBody] SubmitThreadFeedbackDto feedback,
