@@ -82,7 +82,7 @@ try
     // Rate limiting
     builder.Services.AddRateLimiting();
 
-    // CORS
+    // CORS - Restrict to specific methods and headers for security
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("AllowFrontend", policy =>
@@ -90,8 +90,8 @@ try
             policy.WithOrigins(
                     builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
                     ?? ["http://localhost:4200"])
-                .AllowAnyMethod()
-                .AllowAnyHeader()
+                .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .WithHeaders("Content-Type", "Authorization", "X-Client-Id", "X-Gateway-Token")
                 .AllowCredentials();
         });
     });
@@ -117,6 +117,9 @@ try
 
     // Global exception handling (first in pipeline)
     app.UseGlobalExceptionHandling();
+
+    // Gateway protection (requires password to access the site)
+    app.UseGatewayProtection();
 
     // Configure the HTTP request pipeline
     if (app.Environment.IsDevelopment())

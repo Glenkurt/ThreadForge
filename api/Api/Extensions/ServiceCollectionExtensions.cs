@@ -127,16 +127,27 @@ public static class ServiceCollectionExtensions
                     }));
 
             // MVP: 20 thread generations per anonymous user per day
+            // Security: Use IP + X-Client-Id combination to prevent header spoofing bypass
             options.AddPolicy("threadgen", context =>
             {
+                var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
                 var clientId = context.Request.Headers["X-Client-Id"].ToString();
+
+                // Combine IP and client ID for rate limiting key
+                // This prevents bypassing by just changing the X-Client-Id header
+                string partitionKey;
                 if (string.IsNullOrWhiteSpace(clientId) || clientId.Length > 128)
                 {
-                    clientId = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    partitionKey = ipAddress;
+                }
+                else
+                {
+                    // Combine IP + ClientId so changing client ID alone doesn't bypass limits
+                    partitionKey = $"{ipAddress}:{clientId}";
                 }
 
                 return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: clientId,
+                    partitionKey: partitionKey,
                     factory: _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 20,
