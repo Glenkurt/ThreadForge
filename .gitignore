@@ -4,6 +4,10 @@
 # Environment files
 .env
 .env.*
+!.env.example
+
+# SSL Certificates (Let's Encrypt)
+certbot/
 
 # Logs
 *.log
