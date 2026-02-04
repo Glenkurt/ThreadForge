@@ -15,6 +15,16 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Détection de Docker Compose (plugin vs standalone)
+if command -v $DOCKER_COMPOSE &> /dev/null; then
+    DOCKER_COMPOSE="$DOCKER_COMPOSE"
+elif docker compose version &> /dev/null 2>&1; then
+    DOCKER_COMPOSE="docker compose"
+else
+    echo -e "${RED}✗ Docker Compose non trouvé${NC}"
+    exit 1
+fi
+
 # Répertoire du script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -97,7 +107,7 @@ fi
 # -----------------------------------------------------------------------------
 echo ""
 echo -e "${YELLOW}[3/5] Préparation pour la génération du certificat...${NC}"
-docker-compose -f docker-compose.prod.yml stop nginx 2>/dev/null || true
+$DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml stop nginx 2>/dev/null || true
 echo -e "${GREEN}✓ Port 80 libéré${NC}"
 
 # -----------------------------------------------------------------------------
@@ -292,7 +302,7 @@ echo -e "${GREEN}✓ Variables d'environnement mises à jour${NC}"
 # -----------------------------------------------------------------------------
 echo ""
 echo "Redémarrage des services..."
-docker-compose -f docker-compose.prod.yml up -d
+$DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml up -d
 
 # -----------------------------------------------------------------------------
 # Configuration du renouvellement automatique
@@ -318,7 +328,7 @@ if [ -n "$DOMAIN" ]; then
     cp -L /etc/letsencrypt/live/"$DOMAIN"/privkey.pem certbot/conf/live/"$DOMAIN"/
 
     # Recharger Nginx
-    docker-compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
+    $DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml exec -T nginx nginx -s reload
 fi
 RENEW_EOF
 

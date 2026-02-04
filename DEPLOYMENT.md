@@ -77,23 +77,25 @@ Vous verrez une page de connexion demandant le **mot de passe Gateway** que vous
 
 ## Commandes Utiles
 
+> **Note**: Utilisez `docker compose` (avec espace) ou `docker-compose` (avec tiret) selon votre installation. Sur Hostinger, c'est généralement `docker compose`.
+
 ```bash
 # Voir l'état des services
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Voir les logs en temps réel
-docker-compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml logs -f
 
 # Logs d'un service spécifique
-docker-compose -f docker-compose.prod.yml logs -f app
-docker-compose -f docker-compose.prod.yml logs -f nginx
-docker-compose -f docker-compose.prod.yml logs -f db
+docker compose -f docker-compose.prod.yml logs -f app
+docker compose -f docker-compose.prod.yml logs -f nginx
+docker compose -f docker-compose.prod.yml logs -f db
 
 # Redémarrer les services
-docker-compose -f docker-compose.prod.yml restart
+docker compose -f docker-compose.prod.yml restart
 
 # Arrêter les services
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 
 # Mettre à jour l'application
 git pull
@@ -149,7 +151,7 @@ https://votre-domaine.com
 
 ```bash
 # Vérifier les logs de l'app
-docker-compose -f docker-compose.prod.yml logs app
+docker compose -f docker-compose.prod.yml logs app
 
 # Problème courant: variables d'environnement manquantes
 cat .env | grep -E "POSTGRES_PASSWORD|JWT_SECRET|XAI_API_KEY|GATEWAY_PASSWORD"
@@ -159,10 +161,10 @@ cat .env | grep -E "POSTGRES_PASSWORD|JWT_SECRET|XAI_API_KEY|GATEWAY_PASSWORD"
 
 ```bash
 # Vérifier que PostgreSQL est démarré
-docker-compose -f docker-compose.prod.yml ps db
+docker compose -f docker-compose.prod.yml ps db
 
 # Voir les logs de la DB
-docker-compose -f docker-compose.prod.yml logs db
+docker compose -f docker-compose.prod.yml logs db
 ```
 
 ### Port 80 déjà utilisé
@@ -180,13 +182,13 @@ sudo systemctl disable apache2
 
 ```bash
 # Arrêter et supprimer tout
-docker-compose -f docker-compose.prod.yml down -v
+docker compose -f docker-compose.prod.yml down -v
 
 # Reconstruire
-docker-compose -f docker-compose.prod.yml build --no-cache
+docker compose -f docker-compose.prod.yml build --no-cache
 
 # Redémarrer
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ## Sauvegarde
@@ -195,10 +197,10 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ```bash
 # Créer une sauvegarde
-docker-compose -f docker-compose.prod.yml exec db pg_dump -U postgres threadforge > backup_$(date +%Y%m%d).sql
+docker compose -f docker-compose.prod.yml exec db pg_dump -U postgres threadforge > backup_$(date +%Y%m%d).sql
 
 # Restaurer une sauvegarde
-cat backup_20240115.sql | docker-compose -f docker-compose.prod.yml exec -T db psql -U postgres threadforge
+cat backup_20240115.sql | docker compose -f docker-compose.prod.yml exec -T db psql -U postgres threadforge
 ```
 
 ### Sauvegarder la configuration
@@ -245,6 +247,6 @@ cp .env .env.backup
 ## Support
 
 En cas de problème:
-1. Vérifiez les logs: `docker-compose -f docker-compose.prod.yml logs`
+1. Vérifiez les logs: `docker compose -f docker-compose.prod.yml logs`
 2. Consultez la section Dépannage ci-dessus
 3. Ouvrez une issue sur le repository GitHub

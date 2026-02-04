@@ -14,6 +14,16 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Détection de Docker Compose (plugin vs standalone)
+if command -v $DOCKER_COMPOSE &> /dev/null; then
+    DOCKER_COMPOSE="$DOCKER_COMPOSE"
+elif docker compose version &> /dev/null 2>&1; then
+    DOCKER_COMPOSE="docker compose"
+else
+    echo -e "${RED}✗ Docker Compose non trouvé${NC}"
+    exit 1
+fi
+
 # Répertoire du script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -68,7 +78,7 @@ echo -e "${GREEN}✓ Configuration validée${NC}"
 # -----------------------------------------------------------------------------
 echo ""
 echo -e "${YELLOW}[2/5] Arrêt des conteneurs existants...${NC}"
-docker-compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
+$DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml down --remove-orphans 2>/dev/null || true
 echo -e "${GREEN}✓ Conteneurs arrêtés${NC}"
 
 # -----------------------------------------------------------------------------
@@ -77,7 +87,7 @@ echo -e "${GREEN}✓ Conteneurs arrêtés${NC}"
 echo ""
 echo -e "${YELLOW}[3/5] Construction des images Docker...${NC}"
 echo "Cela peut prendre plusieurs minutes lors du premier build..."
-docker-compose -f docker-compose.prod.yml build --no-cache
+$DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml build --no-cache
 echo -e "${GREEN}✓ Images construites${NC}"
 
 # -----------------------------------------------------------------------------
@@ -85,7 +95,7 @@ echo -e "${GREEN}✓ Images construites${NC}"
 # -----------------------------------------------------------------------------
 echo ""
 echo -e "${YELLOW}[4/5] Démarrage des services...${NC}"
-docker-compose -f docker-compose.prod.yml up -d
+$DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml up -d
 echo -e "${GREEN}✓ Services démarrés${NC}"
 
 # -----------------------------------------------------------------------------
@@ -99,7 +109,7 @@ sleep 30
 # Vérifier l'état des conteneurs
 echo ""
 echo "État des conteneurs:"
-docker-compose -f docker-compose.prod.yml ps
+$DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml ps
 
 # Vérifier le health check
 echo ""
@@ -108,7 +118,7 @@ if curl -sf http://localhost/api/v1/health > /dev/null 2>&1; then
     echo -e "${GREEN}✓ API accessible et fonctionnelle${NC}"
 else
     echo -e "${YELLOW}⚠ L'API n'est pas encore prête, vérifiez les logs:${NC}"
-    echo "  docker-compose -f docker-compose.prod.yml logs app"
+    echo "  $DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml logs app"
 fi
 
 # -----------------------------------------------------------------------------
@@ -129,8 +139,8 @@ echo ""
 echo "Protection Gateway activée - mot de passe requis pour accéder."
 echo ""
 echo "Commandes utiles:"
-echo "  Voir les logs:        docker-compose -f docker-compose.prod.yml logs -f"
-echo "  Logs de l'app:        docker-compose -f docker-compose.prod.yml logs -f app"
-echo "  Redémarrer:           docker-compose -f docker-compose.prod.yml restart"
-echo "  Arrêter:              docker-compose -f docker-compose.prod.yml down"
+echo "  Voir les logs:        $DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml logs -f"
+echo "  Logs de l'app:        $DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml logs -f app"
+echo "  Redémarrer:           $DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml restart"
+echo "  Arrêter:              $DOCKER_COMPOSE -f $DOCKER_COMPOSE.prod.yml down"
 echo ""
