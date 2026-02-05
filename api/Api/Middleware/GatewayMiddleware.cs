@@ -105,7 +105,8 @@ public class GatewayMiddleware
                 HttpOnly = true,
                 Secure = false,
                 SameSite = SameSiteMode.Lax,
-                MaxAge = TimeSpan.FromDays(7)
+                MaxAge = TimeSpan.FromDays(7),
+                Path = "/"  // Explicit path ensures cookie is sent for all routes
             });
 
             _logger.LogInformation("Gateway login successful from {IP}", context.Connection.RemoteIpAddress);
