@@ -145,6 +145,44 @@ Votre site sera alors accessible en HTTPS:
 https://votre-domaine.com
 ```
 
+## Logs
+
+Les logs de l'application sont stockés à deux endroits :
+
+### Fichiers de logs (persistants)
+
+Les logs sont écrits dans le dossier `./logs/` sur le VPS :
+
+```bash
+# Lister les fichiers de logs
+ls -la logs/
+
+# Voir les logs du jour (format JSON structuré)
+cat logs/threadforge-*.log
+
+# Chercher les erreurs xAI
+grep -i "xai" logs/threadforge-*.log
+
+# Suivre les logs en temps réel
+tail -f logs/threadforge-*.log
+```
+
+Les fichiers sont :
+- Rotation quotidienne (un fichier par jour)
+- Rétention de 7 jours
+- Taille max de 50 Mo par fichier
+- Format JSON structuré (Compact JSON)
+
+### Logs Docker
+
+```bash
+# Logs temps réel de l'application
+docker compose -f docker-compose.prod.yml logs -f app
+
+# Les 100 dernières lignes
+docker compose -f docker-compose.prod.yml logs --tail 100 app
+```
+
 ## Dépannage
 
 ### L'application ne démarre pas
@@ -153,9 +191,29 @@ https://votre-domaine.com
 # Vérifier les logs de l'app
 docker compose -f docker-compose.prod.yml logs app
 
+# Vérifier les logs fichier pour plus de détails
+cat logs/threadforge-*.log | tail -50
+
 # Problème courant: variables d'environnement manquantes
 cat .env | grep -E "POSTGRES_PASSWORD|JWT_SECRET|XAI_API_KEY|GATEWAY_PASSWORD"
 ```
+
+### Erreur 502 Bad Gateway sur l'API xAI
+
+Si vous voyez une erreur 502, consultez les logs pour le détail :
+
+```bash
+# Chercher les erreurs xAI
+grep -i "xai" logs/threadforge-*.log | tail -20
+
+# Ou dans les logs Docker
+docker compose -f docker-compose.prod.yml logs app | grep -i "xai"
+```
+
+Causes possibles :
+- Clé API xAI invalide ou expirée
+- Limite de rate xAI atteinte
+- Problème réseau vers api.x.ai
 
 ### Erreur de base de données
 

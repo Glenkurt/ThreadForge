@@ -65,6 +65,8 @@ services:
       - Xai__ApiKey=${XAI_API_KEY:?XAI_API_KEY is required}
       - Xai__Model=${XAI_MODEL:-grok-3-mini}
       - Cors__AllowedOrigins__0=${CORS_ORIGIN:-http://localhost}
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       db:
         condition: service_healthy
@@ -77,6 +79,11 @@ services:
     restart: unless-stopped
     networks:
       - threadforge-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     deploy:
       resources:
         limits:

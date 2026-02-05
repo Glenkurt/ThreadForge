@@ -41,7 +41,10 @@ public static class ServiceCollectionExtensions
 
         services.Configure<XaiOptions>(configuration.GetSection(XaiOptions.SectionName));
 
-        services.AddHttpClient<IXaiChatClient, XaiChatClient>();
+        services.AddHttpClient<IXaiChatClient, XaiChatClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
 
         return services;
     }
