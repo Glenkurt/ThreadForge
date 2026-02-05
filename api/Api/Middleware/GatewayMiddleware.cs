@@ -98,11 +98,13 @@ public class GatewayMiddleware
         {
             var token = GenerateToken();
 
+            // Note: Secure=false and SameSite=Lax for HTTP deployment (no HTTPS yet)
+            // When HTTPS is enabled with a domain, change to Secure=true and SameSite=Strict
             context.Response.Cookies.Append(GatewayCookieName, token, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = context.Request.IsHttps,
-                SameSite = SameSiteMode.Strict,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
                 MaxAge = TimeSpan.FromDays(7)
             });
 
