@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TweetCardComponent } from '../tweet-card/tweet-card.component';
+import { ClipboardService } from '../../services/clipboard.service';
 
 @Component({
   selector: 'app-thread-preview',
@@ -12,6 +13,7 @@ import { TweetCardComponent } from '../tweet-card/tweet-card.component';
 })
 export class ThreadPreviewComponent {
   private readonly snackBar = inject(MatSnackBar);
+  private readonly clipboardService = inject(ClipboardService);
 
   @Input() tweets: string[] | null = null;
   @Input() isGenerating: boolean = false;
@@ -22,23 +24,21 @@ export class ThreadPreviewComponent {
   // Copy all state
   allCopied = false;
 
-  copyAllTweets(): void {
+  async copyAllTweets(): Promise<void> {
     if (!this.tweets) return;
 
     const formattedThread = this.tweets
       .map((tweet, index) => `${index + 1}/ ${tweet}`)
       .join('\n\n');
 
-    navigator.clipboard.writeText(formattedThread).then(
-      () => {
-        this.showToast('Thread copied to clipboard');
-        this.allCopied = true;
-        setTimeout(() => this.allCopied = false, 1500);
-      },
-      () => {
-        this.showToast('Failed to copy. Please try again.');
-      }
-    );
+    const success = await this.clipboardService.copy(formattedThread);
+    if (success) {
+      this.showToast('Thread copied to clipboard');
+      this.allCopied = true;
+      setTimeout(() => this.allCopied = false, 1500);
+    } else {
+      this.showToast('Failed to copy. Please try again.');
+    }
   }
 
   onTweetEdited(event: { index: number; newText: string }): void {

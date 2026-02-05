@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, inject, signal } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { ClipboardService } from '../../services/clipboard.service';
 
 @Component({
   selector: 'app-tweet-card',
@@ -12,6 +13,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 })
 export class TweetCardComponent {
   private readonly snackBar = inject(MatSnackBar);
+  private readonly clipboardService = inject(ClipboardService);
 
   @Input({ required: true }) tweet!: string;
   @Input({ required: true }) index!: number;
@@ -39,17 +41,15 @@ export class TweetCardComponent {
   }
 
   // Copy functionality
-  copyTweet(text: string): void {
-    navigator.clipboard.writeText(text).then(
-      () => {
-        this.showToast('Tweet copied to clipboard');
-        this.copied = true;
-        setTimeout(() => this.copied = false, 1500);
-      },
-      () => {
-        this.showToast('Failed to copy. Please try again.');
-      }
-    );
+  async copyTweet(text: string): Promise<void> {
+    const success = await this.clipboardService.copy(text);
+    if (success) {
+      this.showToast('Tweet copied to clipboard');
+      this.copied = true;
+      setTimeout(() => this.copied = false, 1500);
+    } else {
+      this.showToast('Failed to copy. Please try again.');
+    }
   }
 
   // Edit functionality

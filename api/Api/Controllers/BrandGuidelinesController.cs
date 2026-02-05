@@ -41,10 +41,9 @@ public sealed class BrandGuidelinesController : ControllerBase
     /// Save the global brand guideline text.
     /// </summary>
     [HttpPut]
-    [Authorize]
+    // [Authorize] // Disabled for MVP - re-enable when user authentication is implemented
     [ProducesResponseType(typeof(BrandGuidelineDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<BrandGuidelineDto>> Upsert(
         [FromBody] BrandGuidelineDto request,
         CancellationToken cancellationToken)

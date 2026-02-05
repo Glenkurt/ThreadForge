@@ -6,6 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TimeoutError } from 'rxjs';
 
 import { TweetImproverService } from '../../services/tweet-improver.service';
+import { ClipboardService } from '../../services/clipboard.service';
 import {
   ImproveTweetRequest,
   ImproveTweetResponse,
@@ -29,6 +30,7 @@ type ToneOption = {
 export class ImproveComponent {
   private readonly improverService = inject(TweetImproverService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly clipboardService = inject(ClipboardService);
 
   // Expose Math for template
   readonly Math = Math;
@@ -149,11 +151,11 @@ export class ImproveComponent {
     const tweet = this.currentImprovedTweet();
     if (!tweet) return;
 
-    try {
-      await navigator.clipboard.writeText(tweet);
+    const success = await this.clipboardService.copy(tweet);
+    if (success) {
       this.copiedVersion.set(this.selectedVersion());
       setTimeout(() => this.copiedVersion.set(null), 2000);
-    } catch {
+    } else {
       this.showErrorToast('Failed to copy to clipboard');
     }
   }

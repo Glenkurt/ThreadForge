@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProfileAnalysisService } from '../../services/profile-analysis.service';
 import { ProfileAnalysisResponse } from '../../models/profile-analysis.model';
+import { ClipboardService } from '../../services/clipboard.service';
 
 @Component({
   selector: 'app-profile-analysis',
@@ -13,6 +14,7 @@ import { ProfileAnalysisResponse } from '../../models/profile-analysis.model';
 })
 export class ProfileAnalysisComponent {
   private readonly profileService = inject(ProfileAnalysisService);
+  private readonly clipboardService = inject(ClipboardService);
 
   username = signal('');
   isLoading = signal(false);
@@ -71,15 +73,16 @@ export class ProfileAnalysisComponent {
     return this.expandedSections().has(section);
   }
 
-  copyToClipboard(): void {
+  async copyToClipboard(): Promise<void> {
     const result = this.result();
     if (!result) return;
 
     const text = this.generateMarkdownContent(result);
-    navigator.clipboard.writeText(text).then(() => {
+    const success = await this.clipboardService.copy(text);
+    if (success) {
       this.copySuccess.set(true);
       setTimeout(() => this.copySuccess.set(false), 2000);
-    });
+    }
   }
 
   downloadAnalysis(): void {

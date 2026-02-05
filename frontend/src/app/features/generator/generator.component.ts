@@ -426,13 +426,18 @@ export class GeneratorComponent implements OnInit {
     });
   }
 
+  // Track the last saved brand guideline to avoid unnecessary saves
+  private lastSavedBrandGuideline = '';
+
   private loadBrandGuideline(): void {
     this.brandGuidelineService.getBrandGuideline().subscribe({
       next: response => {
-        this.brandGuidelines.set(response.text || '');
+        const text = response.text || '';
+        this.brandGuidelines.set(text);
+        this.lastSavedBrandGuideline = text;
       },
       error: () => {
-        this.showErrorToast('Could not load brand guideline. Try again.');
+        // Silent fail on load - user can still enter new guidelines
       }
     });
   }
@@ -440,7 +445,15 @@ export class GeneratorComponent implements OnInit {
   private persistBrandGuideline(): void {
     const value = this.brandGuidelines().trim();
 
+    // Don't save if empty or unchanged
+    if (!value || value === this.lastSavedBrandGuideline) {
+      return;
+    }
+
     this.brandGuidelineService.saveBrandGuideline(value).subscribe({
+      next: () => {
+        this.lastSavedBrandGuideline = value;
+      },
       error: () => {
         this.showErrorToast('Could not save brand guideline. Try again.');
       }
