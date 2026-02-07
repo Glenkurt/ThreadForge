@@ -129,7 +129,14 @@ public sealed record GenerateThreadRequestDto(
     /// <summary>
     /// Fine-grained style preferences for formatting.
     /// </summary>
-    StylePreferencesDto? StylePreferences = null);
+    StylePreferencesDto? StylePreferences = null,
+
+    /// <summary>
+    /// When true, enriches generation with web research (Serper + LLM synthesis).
+    /// Falls back to standard generation if web search is unavailable.
+    /// </summary>
+    /// <example>false</example>
+    bool UseWebResearch = false);
 
 /// <summary>
 /// Quality analysis of the generated thread.

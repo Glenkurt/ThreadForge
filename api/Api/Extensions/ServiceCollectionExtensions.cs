@@ -31,6 +31,24 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>
+    /// Registers the Serper (Google Search) web search client.
+    /// The API key is optional — web search features degrade gracefully when unconfigured.
+    /// </summary>
+    public static IServiceCollection AddSerper(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<SerperOptions>(configuration.GetSection(SerperOptions.SectionName));
+
+        var timeoutSeconds = configuration.GetValue("Serper:TimeoutSeconds", 8);
+
+        services.AddHttpClient<IWebSearchService, WebSearchService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddXai(this IServiceCollection services, IConfiguration configuration)
     {
         var apiKey = configuration["Xai:ApiKey"];

@@ -70,6 +70,7 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
     private readonly AppDbContext _db;
     private readonly IXaiChatClient _xai;
     private readonly XaiOptions _xaiOptions;
+    private readonly IWebSearchService _webSearch;
     private readonly IThreadQualityService _qualityService;
     private readonly ILogger<ThreadGenerationService> _logger;
 
@@ -77,12 +78,14 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
         AppDbContext db,
         IXaiChatClient xai,
         IOptions<XaiOptions> xaiOptions,
+        IWebSearchService webSearch,
         IThreadQualityService qualityService,
         ILogger<ThreadGenerationService> logger)
     {
         _db = db;
         _xai = xai;
         _xaiOptions = xaiOptions.Value;
+        _webSearch = webSearch;
         _qualityService = qualityService;
         _logger = logger;
     }
@@ -99,8 +102,15 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
 
         var promptJson = JsonSerializer.Serialize(request, JsonOptions);
 
+        // Web research enrichment (optional, fails silently)
+        string? webResearchContext = null;
+        if (request.UseWebResearch)
+        {
+            webResearchContext = await RunWebResearchPipelineAsync(request.Topic, cancellationToken);
+        }
+
         var system = BuildSystemPrompt();
-        var user = BuildUserPrompt(request, maxChars);
+        var user = BuildUserPrompt(request, maxChars, webResearchContext);
 
         // Get temperature based on tone
         var temperature = GetTemperatureForTone(request.Tone);
@@ -179,6 +189,54 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
             draft.Model,
             hashtags.Length > 0 ? hashtags : null,
             quality);
+    }
+
+    private async Task<string?> RunWebResearchPipelineAsync(string topic, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogInformation("Starting web research pipeline for topic: {Topic}",
+                topic.Length > 100 ? topic[..100] + "..." : topic);
+
+            // Step 1: Generate optimized search queries
+            var queries = await _webSearch.GenerateSearchQueriesAsync(topic, cancellationToken);
+            if (queries.Length == 0)
+            {
+                _logger.LogWarning("No search queries generated. Skipping web research.");
+                return null;
+            }
+
+            // Step 2: Execute searches in parallel
+            var searchTasks = queries.Select(q => _webSearch.SearchAsync(q, cancellationToken));
+            var searchResults = await Task.WhenAll(searchTasks);
+
+            var allResults = searchResults.SelectMany(r => r).ToList();
+            if (allResults.Count == 0)
+            {
+                _logger.LogWarning("No search results found. Skipping web research.");
+                return null;
+            }
+
+            _logger.LogInformation(
+                "Web search completed: {QueryCount} queries, {ResultCount} results",
+                queries.Length, allResults.Count);
+
+            // Step 3: Synthesize results into structured context
+            var synthesis = await _webSearch.SynthesizeAsync(topic, allResults, cancellationToken);
+            if (string.IsNullOrWhiteSpace(synthesis))
+            {
+                _logger.LogWarning("Research synthesis returned empty. Skipping web research.");
+                return null;
+            }
+
+            _logger.LogInformation("Web research pipeline completed successfully");
+            return synthesis;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Web research pipeline failed. Falling back to standard generation.");
+            return null;
+        }
     }
 
     private static void ValidateGeneratedTweets(
@@ -351,7 +409,7 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
             """;
     }
 
-    private static string BuildUserPrompt(GenerateThreadRequestDto request, int maxChars)
+    private static string BuildUserPrompt(GenerateThreadRequestDto request, int maxChars, string? webResearchContext = null)
     {
         var sb = new StringBuilder();
 
@@ -468,6 +526,16 @@ Example: '$0 to $127,000 ARR in 9 months. No funding. No team. Here's the playbo
         {
             sb.AppendLine("Previous feedback / regeneration instructions:");
             sb.AppendLine(request.Feedback);
+            sb.AppendLine();
+        }
+
+        // Web research context (injected from enrichment pipeline)
+        if (!string.IsNullOrWhiteSpace(webResearchContext))
+        {
+            sb.AppendLine("WEB RESEARCH CONTEXT (use these facts, stats, and insights to make the thread more concrete and data-driven):");
+            sb.AppendLine(webResearchContext);
+            sb.AppendLine();
+            sb.AppendLine("IMPORTANT: Weave the above research naturally into the thread. Cite specific numbers and examples. Do NOT just list facts — integrate them into engaging tweets.");
             sb.AppendLine();
         }
 

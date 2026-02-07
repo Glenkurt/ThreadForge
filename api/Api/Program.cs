@@ -75,6 +75,9 @@ try
     // Grok (xAI)
     builder.Services.AddXai(builder.Configuration);
 
+    // Serper (Google Search for web research enrichment)
+    builder.Services.AddSerper(builder.Configuration);
+
     // JWT Authentication
     builder.Services.AddJwtAuthentication(builder.Configuration);
     builder.Services.AddAuthorization();
